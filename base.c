@@ -13,10 +13,6 @@ typedef enum {
 } Screen;
 
 int main() {
-    
-    // Velocidade de movimento horizontal do fundo
-    float bgSpeed = 0.5;
-
     // Inicialização da janela
     InitWindow(s_width, s_height, "AE86 Race");
     
@@ -37,6 +33,21 @@ int main() {
     Texture2D buttonPlay = LoadTexture("menu-img/play.png");
     Texture2D buttonOptions = LoadTexture("menu-img/play_hover.png");
 
+
+    // Posição dos botões largura
+    int Button_x_pos = s_width / 2 - 150;
+    // Posição do jogador
+    int pos_x_player = 465;
+    int pos_y_player = 555;
+    // Posição inicial do fundo
+    float pos_x_bg = 50;
+    int pos_y_bg = 555;    
+    // Definição da posição Y inicial da pista
+    int pos_y_pista = s_height - Pista.height;
+
+    // Velocidade de movimento horizontal do fundo
+    float bgSpeed = 0.5;
+
     // Definição da variável para controle da tela atual
     Screen screenAtual = MENUS;
 
@@ -45,30 +56,10 @@ int main() {
 
     // Variável para controlar a mudança de sprite
     float SpriteTimer = 0.0;
-    // Posição dos botões largura
-    int Button_x_pos = s_width / 2 - 150;
-    // Posição do jogador
-    int pos_x_player = 465;
-    int pos_y_player = 555;
-    // Posição inicial do fundo
-    float pos_x_bg = 50;
-    int pos_y_bg = 555; 
-    // Definição da posição Y inicial da pista
-    int pos_y_pista = s_height - Pista.height;
-
-    // Definição das dimensões iniciais da pista
-    float pistaWidth = (float)Pista.width;
-    float pistaHeight = (float)Pista.height;
-
-
 
     // Loop principal
     while (!WindowShouldClose()) {
         // lógica para determinar qual tela desenhar
-        // Renderiza a tela
-        BeginDrawing();
-        ClearBackground(RAYWHITE); // Mude a cor de fundo conforme necessário
-
         switch (screenAtual) {
             case MENUS:
                 // Desenhar a tela do menu
@@ -103,7 +94,6 @@ int main() {
                 break;
             
             case play_screen:
-
             // Lógica para o movimento horixontal do fundo e mudar a sprite do jogado
              if (IsKeyDown(KEY_D)) {
                     pos_x_bg -= bgSpeed; // Move o fundo para a esquerda
@@ -134,18 +124,13 @@ int main() {
                 BeginDrawing();
                 ClearBackground(BLANK);
                 DrawTexture(BG, 0, 360, WHITE); // Desenha a imagem de fundo
-
-                // Desenhar as camadas da pista para criar a perspectiva
-                float currentY = pos_y_pista;
-                while (currentY + pistaHeight * 0.5 >= 0) {
-                DrawTexture(Pista, 0, currentY, WHITE);
-                currentY -= pistaHeight * 0.5; // Diminui a posição Y 
-                pistaWidth -= 427.5; // Diminui a largura da pista 
-                pistaHeight *= 0.5; // Diminui a altura da pista 
+                // Desenhar os tiles da pista que se estendem para o horizonte
+                int current_y = pos_y_pista;
+                while (current_y >= -Pista.height) {
+                    DrawTexture(Pista, pos_x_bg, current_y, WHITE);
+                    current_y -= Pista.height;
                 }
-
-
-
+            
 
                 //desenha a sprite do jogador de acordo com o estado
                 switch (estado_player) {
@@ -214,7 +199,4 @@ int main() {
 
     //Fecha a janela
     CloseWindow();
-
-    return 0;
 }
-
