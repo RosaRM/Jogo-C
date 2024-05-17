@@ -14,9 +14,11 @@ typedef enum {
 
 int main() {
     
+    
     // Velocidade de movimento horizontal do fundo
     float bgSpeed = 0.5;
-
+    // criançao float scale
+    float scale = 1.0;
     // Inicialização da janela
     InitWindow(s_width, s_height, "AE86 Race");
     
@@ -43,6 +45,9 @@ int main() {
     // Variável para controlar o estado da sprite do jogador
     int estado_player = 0; // 0 para sprite padrão, 1 para sprite de curva direita 1, 2 para sprite de curva direita 2, 3 para sprite de curva esquerda 1, 4 para sprite de curva esquerda 2
 
+    
+    
+
     // Variável para controlar a mudança de sprite
     float SpriteTimer = 0.0;
     // Posição dos botões largura
@@ -51,15 +56,13 @@ int main() {
     int pos_x_player = 465;
     int pos_y_player = 555;
     // Posição inicial do fundo
-    float pos_x_bg = 50;
-    int pos_y_bg = 555; 
+    float pos_x_bg = s_width - Pista.width;
     // Definição da posição Y inicial da pista
-    int pos_y_pista = s_height - Pista.height;
-
-    // Definição das dimensões iniciais da pista
-    float pistaWidth = (float)Pista.width;
-    float pistaHeight = (float)Pista.height;
-
+    int pos_y_pista = s_height - 318;
+    
+    float currentY = pos_y_pista;
+    //Vetor para criar a pista
+    Vector2 pos_pista = (Vector2){pos_x_bg, currentY};
 
 
     // Loop principal
@@ -105,9 +108,12 @@ int main() {
             case play_screen:
 
             // Lógica para o movimento horixontal do fundo e mudar a sprite do jogado
-             if (IsKeyDown(KEY_D)) {
-                    pos_x_bg -= bgSpeed; // Move o fundo para a esquerda
+                if (IsKeyDown(KEY_W)) {
+                pos_pista.y -= bgSpeed;} // Move o fundo para a esquerda
+                if (IsKeyDown(KEY_D)) {
+                    pos_pista.x -= bgSpeed; // Move o fundo para a esquerda
                     SpriteTimer += bgSpeed; // adiciona pra mudar a sprite
+
                 // ve se é hora de mudar a sprite
                 if (SpriteTimer > 125) {
                         estado_player = 2; // Altera para a próxima sprite de curva direita
@@ -116,7 +122,7 @@ int main() {
                     estado_player = 1; // Altera o estado da sprite do jogador para curva direita 1
                 }
                 } else if (IsKeyDown(KEY_A)) {
-                    pos_x_bg += bgSpeed; // move o fundo para a esquerda
+                    pos_pista.x += bgSpeed; // move o fundo para a esquerda
                     SpriteTimer += bgSpeed; // adiciona pra mudar a sprite
                 // Verifica se é hora de mudar a sprite
                 if (SpriteTimer > 125) {
@@ -135,13 +141,13 @@ int main() {
                 ClearBackground(BLANK);
                 DrawTexture(BG, 0, 360, WHITE); // Desenha a imagem de fundo
 
-                // Desenhar as camadas da pista para criar a perspectiva
-                float currentY = pos_y_pista;
-                while (currentY + pistaHeight * 0.5 >= 0) {
-                DrawTexture(Pista, 0, currentY, WHITE);
-                currentY -= pistaHeight * 0.5; // Diminui a posição Y 
-                pistaWidth -= 427.5; // Diminui a largura da pista 
-                pistaHeight *= 0.5; // Diminui a altura da pista 
+
+                float x = 0.0f;
+
+               //Desenhar as camadas da pista para criar a perspectiva
+                while (pos_pista.y + Pista.height <= s_height) {
+                DrawTextureEx(Pista, pos_pista, 0, scale, WHITE);
+                pos_pista.y += Pista.height * scale; // Avança para a próxima camada da pista
                 }
 
 
