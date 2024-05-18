@@ -47,9 +47,11 @@ int main() {
     int Button_x_pos = s_width / 2 - 150;
     // Posição do jogador
     int pos_x_player = 465;
-    int pos_y_player = 700;
+    int pos_y_player = 800;
     // Posição inicial da pista
     float pos_pista_x = s_width / 2;
+    // posição do fundo estático
+    int pos_BG_y = 500;
 
     // Loop principal
     while (!WindowShouldClose()) {
@@ -119,13 +121,13 @@ int main() {
                 ClearBackground(DARKPURPLE); 
 
                 // Resetar a posição inicial da pista para desenhar de baixo para cima
-                float currentY = s_height - 200;
+                float currentY = s_height-120;
                 float Scale = 1.0f; // Começa com uma escala maior
-                const float Sub_scale = 0.460f; // Define a quantidade que a escala diminui a cada passo
-                const float minScale = 0.1f; // Define uma escala mínima para evitar que as texturas desapareçam
+                const float Sub_scale = 0.5f; // Define a quantidade que a escala diminui a cada passo
+                const float minScale = 0.0009765625; // Define uma escala mínima para evitar que as texturas desapareçam
 
                 // Desenhar as camadas da pista para criar a perspectiva
-                while (currentY > -Pista.height * Scale) {
+                while (currentY >pos_BG_y + 63) {
                     // Calcular a posição x para centralizar a pista
                     float posX = pos_pista_x - (Pista.width * Scale) / 2;
 
@@ -134,14 +136,16 @@ int main() {
 
                     // Atualiza a posição vertical para a próxima camada
                     currentY -= Pista.height * Scale * Sub_scale;
+                    
 
                     // Diminui a escala
-                    Scale -= Sub_scale; 
+                    Scale *= Sub_scale; 
                     if (Scale < minScale) Scale = minScale; // Garante que a escala não fique menor que o mínimo
                 }
 
                 // Desenha o fundo deposi
-                DrawTexture(BG, 0, 360, WHITE); // Desenha a imagem de fundo
+                DrawTexture(BG, 0, pos_BG_y
+                , WHITE); // Desenha a imagem de fundo
 
 
                 // Desenha a sprite do jogador de acordo com o estado
