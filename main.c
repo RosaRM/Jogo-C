@@ -8,8 +8,8 @@
 // Enumeração para as telas do menu
 typedef enum {
     MENUS = 0,
-    PLAY_SCREEN,
-    RANK_SCREEN
+    P_SCREEN,
+    R_SCREEN
 } Screen;
 
 typedef struct {
@@ -21,7 +21,7 @@ typedef struct {
 
 // Declarar funções antes do loop principal para funções que possam chamar umas às outras
 
-//Funções para desenhar as texturas de cada tela
+// Funções para desenhar as texturas de cada tela
 void DrawMenuScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOptions, Texture2D buttonExit);
 void DrawPlayScreen(Texture2D buttonExit, Pista *pista, Texture2D BG, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float bgSpeed, int *estado_player, float *SpriteTimer);
 void DrawRankScreen(Texture2D buttonExit);
@@ -34,7 +34,7 @@ int main() {
     Pista pista;
     pista.texture = LoadTexture("play-img/Pista.png");
     pista.posX = s_width / 2;
-    pista.posY = s_height - 120;
+    pista.posY = s_height - 112;
     pista.scale = 1.0f;
 
     // Carregamento das texturas
@@ -50,7 +50,7 @@ int main() {
     Texture2D buttonOptions = LoadTexture("menu-img/play_hover.png");
 
     // Variáveis de controle
-    Screen screenAtual = MENUS;
+    Screen screenAtual = P_SCREEN;
     float bgSpeed = 0.5;
     float SpriteTimer = 0.0;
     int estado_player = 0;
@@ -70,22 +70,22 @@ int main() {
                     if (CheckCollisionPointRec(mousePoint, (Rectangle){s_width / 2 - 150, 650, buttonExit.width, buttonExit.height})) {
                         CloseWindow();
                     } else if (CheckCollisionPointRec(mousePoint, (Rectangle){s_width / 2 - 150, 100, buttonPlay.width, buttonPlay.height})) {
-                        screenAtual = PLAY_SCREEN;
+                        screenAtual = P_SCREEN;
                     } else if (CheckCollisionPointRec(mousePoint, (Rectangle){s_width / 2 - 150, 250, buttonOptions.width, buttonOptions.height})) {
-                        screenAtual = RANK_SCREEN;
+                        screenAtual = R_SCREEN;
                     }
                 }
                 break;
 
-            case PLAY_SCREEN:
+            case P_SCREEN:
                 DrawPlayScreen(buttonExit, &pista, BG, Jogador, Jogador_D1, Jogador_D2, Jogador_E1, Jogador_E2, bgSpeed, &estado_player, &SpriteTimer);
-                    if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) {
-                         pista.posY += bgSpeed; // Move a pista para baixo
-                    }
-                    //APENAS PARA TESTES 
-                    if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)) {
-                         pista.posY -= bgSpeed; // Move a pista para baixo
-                    }
+                if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) {
+                    pista.posY += bgSpeed; // Move a pista para baixo
+                }
+                //APENAS PARA TESTES
+                if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)) {
+                    pista.posY -= bgSpeed; // Move a pista para cima
+                }
                 // Lógica para voltar ao menu
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     Vector2 mousePoint = GetMousePosition();
@@ -95,7 +95,7 @@ int main() {
                 }
                 break;
 
-            case RANK_SCREEN:
+            case R_SCREEN:
                 DrawRankScreen(buttonExit);
 
                 // Lógica para voltar ao menu
@@ -140,8 +140,8 @@ void DrawMenuScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOpti
 
 // Função para desenhar a tela de jogo
 void DrawPlayScreen(Texture2D buttonExit, Pista *pista, Texture2D BG, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float bgSpeed, int *estado_player, float *SpriteTimer) {
-    int pos_x_player = 465;
-    int pos_y_player = 800;
+    int pos_player_x = pista->texture.width / 2;
+    int pos_player_y = 800;
     int pos_BG_y = 600;
 
     // Movimenta a pista e modifica variáveis para mudar a Sprite do Carro
@@ -153,9 +153,9 @@ void DrawPlayScreen(Texture2D buttonExit, Pista *pista, Texture2D BG, Texture2D 
             *estado_player = 2;
             *SpriteTimer = 100;
         } else {
-             *estado_player = 1;
+            *estado_player = 1;
         }
-        } else if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
+    } else if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
         pista->posX += bgSpeed;
         *SpriteTimer -= bgSpeed;
 
@@ -165,17 +165,18 @@ void DrawPlayScreen(Texture2D buttonExit, Pista *pista, Texture2D BG, Texture2D 
         } else {
             *estado_player = 3;
         }
-        } else {
-            *SpriteTimer = 0;
-            *estado_player = 0;
-        }
-    
+    } else {
+        *SpriteTimer = 0;
+        *estado_player = 0;
+    }
+
 
     ClearBackground(DARKPURPLE);
     float currentY = pista->posY; // Define onde começa a desenhar a pista
     float Scale = pista->scale; // Escala inicial
     const float Mut_scale = 0.5f;
     const float minScale = 0.0009765625;
+
 
     // Desenhar as camadas da pista para criar a perspectiva
     while (currentY > pos_BG_y + 63) {
@@ -199,19 +200,19 @@ void DrawPlayScreen(Texture2D buttonExit, Pista *pista, Texture2D BG, Texture2D 
     // Desenha a sprite do jogador de acordo com o estado para animação de curva
     switch (*estado_player) {
         case 0:
-            DrawTexture(Jogador, pos_x_player, pos_y_player, WHITE); // Sprite padrão
+            DrawTexture(Jogador, pos_player_x, pos_player_y, WHITE); // Sprite padrão
             break;
         case 1:
-            DrawTexture(Jogador_D1, pos_x_player, pos_y_player, WHITE); // Sprite de curva direita 1
+            DrawTexture(Jogador_D1, pos_player_x, pos_player_y, WHITE); // Sprite de curva direita 1
             break;
         case 2:
-            DrawTexture(Jogador_D2, pos_x_player, pos_y_player, WHITE); // Sprite de curva direita 2
+            DrawTexture(Jogador_D2, pos_player_x, pos_player_y, WHITE); // Sprite de curva direita 2
             break;
         case 3:
-            DrawTexture(Jogador_E1, pos_x_player, pos_y_player, WHITE); // Sprite de curva esquerda 1
+            DrawTexture(Jogador_E1, pos_player_x, pos_player_y, WHITE); // Sprite de curva esquerda 1
             break;
         case 4:
-            DrawTexture(Jogador_E2, pos_x_player, pos_y_player, WHITE); // Sprite de curva esquerda 2
+            DrawTexture(Jogador_E2, pos_player_x, pos_player_y, WHITE); // Sprite de curva esquerda 2
             break;
     }
 
