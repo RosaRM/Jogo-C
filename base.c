@@ -3,41 +3,37 @@
 
 // Definição das constantes
 #define s_width 1029 
-#define s_height 900
+#define s_heigh 900
 
 // Enumeração para as telas do menu
 typedef enum {
     MENUS = 0,
-    PLAY_SCREEN,
-    RANK_SCREEN
+    P_screen,
+    R_screen
 } Screen;
 
+// Struct pra representar um obstáculo
 typedef struct {
-    Texture2D texture;  
-    float posX;         
-    float posY;         
-    float scale;        
-} Pista;
+    Vector2 position;
+    Texture2D texture;
+    float speed;
+} Obstacle;
 
 // Declarar funções antes do loop principal para funções que possam chamar umas às outras
 
-//Funções para desenhar as texturas de cada tela
-void DrawMenuScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOptions, Texture2D buttonExit);
-void DrawPlayScreen(Texture2D buttonExit, Pista *pista, Texture2D BG, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float bgSpeed, int *estado_player, float *SpriteTimer);
-void DrawRankScreen(Texture2D buttonExit);
+// Funções para desenhar as texturas de cada tela
+void DrawMScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOptions, Texture2D buttonExit);
+void DrawPScreen(Texture2D buttonExit, Texture2D Pista, Texture2D BG, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float bgSpeed, int *estado_player, float *SpriteTimer, float scale);
+void DrawRScreen(Texture2D buttonExit);
+void DrawVelocimetro(float speed, float max);
+
 
 int main() {
     // Inicialização da janela
-    InitWindow(s_width, s_height, "AE86 Race");
-
-    // Definições das variáveis da struct Pista
-    Pista pista;
-    pista.texture = LoadTexture("play-img/Pista.png");
-    pista.posX = s_width / 2;
-    pista.posY = s_height - 120;
-    pista.scale = 1.0f;
+    InitWindow(s_width, s_heigh, "AE86 Race");
 
     // Carregamento das texturas
+    Texture2D Pista = LoadTexture("play-img/Pista.png");
     Texture2D BG = LoadTexture("play-img/BG.png");
     Texture2D menuBG = LoadTexture("menu-img/MENU.png");
     Texture2D Jogador = LoadTexture("play-img/carro.png");
@@ -50,19 +46,28 @@ int main() {
     Texture2D buttonOptions = LoadTexture("menu-img/play_hover.png");
 
     // Variáveis de controle
-    Screen screenAtual = PLAY_SCREEN;
-    float bgSpeed = 0.5;
+    Screen screenAtual = MENUS;
+    float bgSpeed = 0.0; // Começar com velocidade 0
+    float maxSpeed = 0.7; // Velocidade máxima
+    const float initiAcel = 0.00001; // Aceleração inicial
+    const float initiDesacel = 0.0001; // Aceleração inicial
+    float acel = initiAcel;
     float SpriteTimer = 0.0;
     int estado_player = 0;
+    float pos_pista_x = s_width / 2;
+    float pos_pista_y = s_heigh - 120;
+    float pistaScale = 0.5f; // Fator de escala para a pista
+
 
     // Loop principal
     while (!WindowShouldClose()) {
+
         BeginDrawing();
         ClearBackground(RAYWHITE); // Mude a cor de fundo conforme necessário
 
         switch (screenAtual) {
             case MENUS:
-                DrawMenuScreen(menuBG, buttonPlay, buttonOptions, buttonExit);
+                DrawMScreen(menuBG, buttonPlay, buttonOptions, buttonExit);
 
                 // Lógica para detectar cliques nos botões
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -70,22 +75,92 @@ int main() {
                     if (CheckCollisionPointRec(mousePoint, (Rectangle){s_width / 2 - 150, 650, buttonExit.width, buttonExit.height})) {
                         CloseWindow();
                     } else if (CheckCollisionPointRec(mousePoint, (Rectangle){s_width / 2 - 150, 100, buttonPlay.width, buttonPlay.height})) {
-                        screenAtual = PLAY_SCREEN;
+                        screenAtual = P_screen;
                     } else if (CheckCollisionPointRec(mousePoint, (Rectangle){s_width / 2 - 150, 250, buttonOptions.width, buttonOptions.height})) {
-                        screenAtual = RANK_SCREEN;
+                        screenAtual = R_screen;
                     }
                 }
                 break;
 
-            case PLAY_SCREEN:
-                DrawPlayScreen(buttonExit, &pista, BG, Jogador, Jogador_D1, Jogador_D2, Jogador_E1, Jogador_E2, bgSpeed, &estado_player, &SpriteTimer);
-                    if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) {
-                         pista.posY += bgSpeed; // Move a pista para baixo
+            case P_screen:
+                DrawPScreen(buttonExit, Pista, BG, Jogador, Jogador_D1, Jogador_D2, Jogador_E1, Jogador_E2, &pos_pista_x, &pos_pista_y, bgSpeed, &estado_player, &SpriteTimer, pistaScale);
+                DrawVelocimetro(bgSpeed, maxSpeed); // Adiciona o velocímetro
+                if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) {
+                    // Aumentar a velocidade gradualmente até a velocidade máxima
+                    if (bgSpeed < maxSpeed) {
+                        bgSpeed += acel;
+                        if (bgSpeed > 0.005) {
+                            acel += 0.000000001;
+                        }
+                        if (bgSpeed > maxSpeed) {
+                            bgSpeed = maxSpeed;
+                        }
                     }
-                    //APENAS PARA TESTES 
-                    if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)) {
-                         pista.posY -= bgSpeed; // Move a pista para baixo
+                } else {
+                        acel = initiAcel; // Redefinir a aceleração para o valor inicial
+                        // Reduzir a velocidade gradualmente quando a tecla não está pressionada
+                        if (bgSpeed > 0) {
+                            bgSpeed -= acel ; // A desaceleração é mais lenta
+                            if (bgSpeed <= 0) {
+                                bgSpeed = 0;
+                            }
+                        }
+                }
+                    // Desacelerar ao pressionar a tecla S
+                if (IsKeyDown(KEY_S) || (IsKeyDown(KEY_DOWN) && bgSpeed > 0)) {
+                        bgSpeed -= initiDesacel; // Usar a aceleração inicial para desacelerar
+                        if (bgSpeed <= 0) {
+                            bgSpeed = 0;
+                        }
                     }
+
+                pos_pista_y += bgSpeed; // Move a pista de acordo com a velocidade
+                
+                    // Movimenta a pista e modifica variavel para mudar Sprite do Carro
+                if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
+                    pos_pista_x -= bgSpeed;
+                    SpriteTimer += bgSpeed;
+                    acel = initiAcel; // Redefinir a aceleração para o valor inicial
+                        // Reduzir a velocidade gradualmente quando a tecla não está pressionada
+                    if (bgSpeed > 0) {
+                        bgSpeed -= acel *2 ; // A desaceleração é mais lenta
+                        if (bgSpeed <= 0) {
+                            bgSpeed = 0;
+                        }
+                    }
+
+                    if (SpriteTimer > 100) {
+                        estado_player = 2;
+                        SpriteTimer = 100;
+                    } else {
+                        estado_player = 1;
+                    }
+                } else if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
+                    pos_pista_x += bgSpeed;
+                    SpriteTimer -= bgSpeed;
+                    acel = initiAcel; // Redefinir a aceleração para o valor inicial
+                        // Reduzir a velocidade gradualmente quando a tecla não está pressionada
+                    if (bgSpeed > 0) {
+                        bgSpeed -= acel *2 ; // A desaceleração é mais lenta
+                        if (bgSpeed <= 0) {
+                            bgSpeed = 0;
+                        }
+                    }
+
+
+                    if (SpriteTimer < -100) {
+                        estado_player = 4;
+                        SpriteTimer = -100;
+                    } else {
+                        estado_player = 3;
+                    }
+                } else {
+                    SpriteTimer = 0;
+                    estado_player = 0;
+                }
+
+
+
                 // Lógica para voltar ao menu
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     Vector2 mousePoint = GetMousePosition();
@@ -95,8 +170,9 @@ int main() {
                 }
                 break;
 
-            case RANK_SCREEN:
-                DrawRankScreen(buttonExit);
+
+            case R_screen:
+                DrawRScreen(buttonExit);
 
                 // Lógica para voltar ao menu
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -112,7 +188,7 @@ int main() {
     }
 
     // Descarregamento das texturas e fechamento da janela
-    UnloadTexture(pista.texture);
+    UnloadTexture(Pista);
     UnloadTexture(BG);
     UnloadTexture(menuBG);
     UnloadTexture(Jogador);
@@ -128,8 +204,8 @@ int main() {
     return 0;
 }
 
-// Função para desenhar a tela de Menu
-void DrawMenuScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOptions, Texture2D buttonExit) {
+// Chama variavel de desenhar a tela de Menu
+void DrawMScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOptions, Texture2D buttonExit) {
     ClearBackground(BLACK); 
     // Desenha elementos da tela
     DrawTexture(menuBG, 265, 50, WHITE);  
@@ -138,59 +214,26 @@ void DrawMenuScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOpti
     DrawTexture(buttonExit, s_width / 2 - 150, 650, WHITE);
 }
 
-// Função para desenhar a tela de jogo
-void DrawPlayScreen(Texture2D buttonExit, Pista *pista, Texture2D BG, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float bgSpeed, int *estado_player, float *SpriteTimer) {
+// Chama variavel de desenhar a tela de jogo
+void DrawPScreen(Texture2D buttonExit, Texture2D Pista, Texture2D BG, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float bgSpeed, int *estado_player, float *SpriteTimer, float scale) {
     int pos_x_player = 465;
     int pos_y_player = 800;
-    int pos_BG_y = 600;
+    int pos_BG_y = 300;
 
-    // Movimenta a pista e modifica variáveis para mudar a Sprite do Carro
-    if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
-        pista->posX -= bgSpeed;
-        *SpriteTimer += bgSpeed;
-
-        if (*SpriteTimer > 100) {
-            *estado_player = 2;
-            *SpriteTimer = 100;
-        } else {
-             *estado_player = 1;
-        }
-        } else if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
-        pista->posX += bgSpeed;
-        *SpriteTimer -= bgSpeed;
-
-        if (*SpriteTimer < -100) {
-            *estado_player = 4;
-            *SpriteTimer = -100;
-        } else {
-            *estado_player = 3;
-        }
-        } else {
-            *SpriteTimer = 0;
-            *estado_player = 0;
-        }
-    
 
     ClearBackground(DARKPURPLE);
-    float currentY = pista->posY; // Define onde começa a desenhar a pista
-    float Scale = pista->scale; // Escala inicial
-    const float Mut_scale = 0.5f;
-    const float minScale = 0.0009765625;
-
+    float currentY = *pos_pista_y; // Define onde começa a desenhar a pista
+    scale = 0.9;
     // Desenhar as camadas da pista para criar a perspectiva
-    while (currentY > pos_BG_y + 63) {
+    while (currentY > pos_BG_y - Pista.height * scale) {
         // Calcular a posição x para centralizar a pista
-        float posX = pista->posX - (pista->texture.width * Scale) / 2;
+        float posX = *pos_pista_x - (Pista.width * scale) / 2;
 
-        // Desenha a textura da pista
-        DrawTextureEx(pista->texture, (Vector2){posX, currentY}, 0, Scale, WHITE);
+        // Desenha a textura da pista com a escala
+        DrawTextureEx(Pista, (Vector2){posX, currentY}, 0.0f, scale, WHITE);
 
         // Atualiza a posição vertical para a próxima camada
-        currentY -= pista->texture.height * Scale * Mut_scale;
-
-        // Diminui a escala
-        Scale *= Mut_scale;
-        if (Scale < minScale) Scale = minScale; // Garante que a escala não fique menor que o mínimo e desenhe a sprite infinitamente
+        currentY -= Pista.height * scale;
     }
 
     // Desenha o fundo depois
@@ -219,9 +262,26 @@ void DrawPlayScreen(Texture2D buttonExit, Pista *pista, Texture2D BG, Texture2D 
     DrawTexture(buttonExit, s_width / 2 - buttonExit.width / 2, 50, WHITE);
 }
 
-// Função para desenhar a tela de ranking
-void DrawRankScreen(Texture2D buttonExit) {
+// Chama variavel de desenhar a tela de ranking
+void DrawRScreen(Texture2D buttonExit) {
     ClearBackground(BLUE);
-    DrawText("Ranking Screen", s_width / 2 - MeasureText("Ranking Screen", 20) / 2, s_height / 2 - 10, 20, WHITE);
+    DrawText("Ranking Screen", s_width / 2 - MeasureText("Ranking Screen", 20) / 2, s_heigh / 2 - 10, 20, WHITE);
     DrawTexture(buttonExit, s_width / 2 - buttonExit.width / 2, 50, WHITE);
+}
+
+void DrawVelocimetro(float speed, float max) {
+    // Convertendo a velocidade de pixels por frame para Km/h
+    float Kmh = (speed * 195) / max;
+
+    // Medir as dimensões do texto
+    float textWidth = MeasureText(TextFormat("%.0f Km/h", Kmh), 25);
+
+    int text_pos_x = 875;
+    int text_pos_y = 370;
+
+
+    DrawRectangle(text_pos_x - 5, text_pos_y - 5, textWidth +10, 25+10, BLACK);
+
+    // Texto com a velocidade
+    DrawText(TextFormat("%.0f Km/h", Kmh),text_pos_x ,text_pos_y , 25, GOLD);
 }
