@@ -17,7 +17,7 @@ typedef struct {
     Vector2 position;
     Texture2D texture;
     float speed;
-} Obstacle;
+} Obstaculo;
 
 // Declarar funções antes do loop principal para funções que possam chamar umas às outras
 
@@ -47,9 +47,10 @@ int main() {
 
     // Variáveis de controle
     Screen screenAtual = MENUS;
-    float bgSpeed = 0.0; // Começar com velocidade 0
+    float bgSpeedX = 0.4;// Velocidade da curva
+    float bgSpeed = 0.0; 
     float maxSpeed = 0.7; // Velocidade máxima
-    const float initiAcel = 0.00001; // Aceleração inicial
+    const float initiAcel = 0.000008; // Aceleração inicial
     const float initiDesacel = 0.0001; // Aceleração inicial
     float acel = initiAcel;
     float SpriteTimer = 0.0;
@@ -100,7 +101,7 @@ int main() {
                         acel = initiAcel; // Redefinir a aceleração para o valor inicial
                         // Reduzir a velocidade gradualmente quando a tecla não está pressionada
                         if (bgSpeed > 0) {
-                            bgSpeed -= acel ; // A desaceleração é mais lenta
+                            bgSpeed -= acel ; // A desaceleração 
                             if (bgSpeed <= 0) {
                                 bgSpeed = 0;
                             }
@@ -118,36 +119,33 @@ int main() {
                 
                     // Movimenta a pista e modifica variavel para mudar Sprite do Carro
                 if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
-                    pos_pista_x -= bgSpeed;
-                    SpriteTimer += bgSpeed;
-                    acel = initiAcel; // Redefinir a aceleração para o valor inicial
+                    SpriteTimer += bgSpeedX;
                         // Reduzir a velocidade gradualmente quando a tecla não está pressionada
-                    if (bgSpeed > 0) {
-                        bgSpeed -= acel *2 ; // A desaceleração é mais lenta
+                    if (bgSpeed > 0.4) {
+                        pos_pista_x -= bgSpeedX;
+                        bgSpeed -= acel *1.2 ; // A desaceleração é mais lenta
                         if (bgSpeed <= 0) {
                             bgSpeed = 0;
                         }
                     }
-
-                    if (SpriteTimer > 100) {
+                    else {pos_pista_x += bgSpeed;}
+                    if (SpriteTimer < -100) {
                         estado_player = 2;
-                        SpriteTimer = 100;
+                        SpriteTimer = -100;
                     } else {
                         estado_player = 1;
                     }
                 } else if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
-                    pos_pista_x += bgSpeed;
-                    SpriteTimer -= bgSpeed;
-                    acel = initiAcel; // Redefinir a aceleração para o valor inicial
+                    SpriteTimer -= bgSpeedX;
                         // Reduzir a velocidade gradualmente quando a tecla não está pressionada
-                    if (bgSpeed > 0) {
-                        bgSpeed -= acel *2 ; // A desaceleração é mais lenta
+                    if (bgSpeed > 0.4) {
+                        pos_pista_x += bgSpeedX;
+                        bgSpeed -= acel *1.2 ; // A desaceleração é mais lenta
                         if (bgSpeed <= 0) {
                             bgSpeed = 0;
                         }
                     }
-
-
+                    else {pos_pista_x += bgSpeed;}
                     if (SpriteTimer < -100) {
                         estado_player = 4;
                         SpriteTimer = -100;
