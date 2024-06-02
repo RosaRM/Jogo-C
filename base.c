@@ -3,7 +3,8 @@
 
 // Definição das constantes
 #define s_width 1029 
-#define s_heigh 900
+#define s_height 900
+#define MAX_OBSTACULOS 10
 
 // Enumeração para as telas do menu
 typedef enum {
@@ -16,21 +17,24 @@ typedef enum {
 typedef struct {
     Vector2 position;
     Texture2D texture;
-    float speed;
+    bool Ativo;
 } Obstaculo;
-
-// Declarar funções antes do loop principal para funções que possam chamar umas às outras
 
 // Funções para desenhar as texturas de cada tela
 void DrawMScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOptions, Texture2D buttonExit);
 void DrawPScreen(Texture2D buttonExit, Texture2D Pista, Texture2D BG, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float bgSpeed, int *estado_player, float *SpriteTimer, float scale);
 void DrawRScreen(Texture2D buttonExit);
 void DrawVelocimetro(float speed, float max);
+void InitObstacles();
+void SpawnObstacle(float pistaX, float pistaY);
+void UpdateAndDrawObstacles(float bgSpeed);
 
+Obstaculo obstaculos[MAX_OBSTACULOS];
+Texture2D obstacleTexture;
 
 int main() {
     // Inicialização da janela
-    InitWindow(s_width, s_heigh, "AE86 Race");
+    InitWindow(s_width, s_height, "AE86 Race");
 
     // Carregamento das texturas
     Texture2D Pista = LoadTexture("play-img/Pista.png");
@@ -44,25 +48,26 @@ int main() {
     Texture2D buttonExit = LoadTexture("menu-img/quit.png");
     Texture2D buttonPlay = LoadTexture("menu-img/play.png");
     Texture2D buttonOptions = LoadTexture("menu-img/play_hover.png");
+    obstacleTexture = LoadTexture("play-img/Obstaculo1.png");
 
     // Variáveis de controle
     Screen screenAtual = MENUS;
-    float bgSpeedX = 0.4;// Velocidade da curva
+    float bgSpeedX = 0.4; // Velocidade da curva
     float bgSpeed = 0.0; 
     float maxSpeed = 0.7; // Velocidade máxima
     const float initiAcel = 0.000008; // Aceleração inicial
-    const float initiDesacel = 0.0001; // Aceleração inicial
+    const float initiDesacel = 0.0001; // Desaceleração inicial
     float acel = initiAcel;
     float SpriteTimer = 0.0;
     int estado_player = 0;
     float pos_pista_x = s_width / 2;
-    float pos_pista_y = s_heigh - 120;
+    float pos_pista_y = s_height - 120;
     float pistaScale = 0.5f; // Fator de escala para a pista
 
+    InitObstacles();
 
     // Loop principal
     while (!WindowShouldClose()) {
-
         BeginDrawing();
         ClearBackground(RAYWHITE); // Mude a cor de fundo conforme necessário
 
@@ -85,8 +90,11 @@ int main() {
 
             case P_screen:
                 DrawPScreen(buttonExit, Pista, BG, Jogador, Jogador_D1, Jogador_D2, Jogador_E1, Jogador_E2, &pos_pista_x, &pos_pista_y, bgSpeed, &estado_player, &SpriteTimer, pistaScale);
-                DrawVelocimetro(bgSpeed, maxSpeed); // Adiciona o velocímetro
-                if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) {
+
+                // Atualização da posição e velocidade da pista
+                pos_pista_y += bgSpeed;
+
+if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) {
                     // Aumentar a velocidade gradualmente até a velocidade máxima
                     if (bgSpeed < maxSpeed) {
                         bgSpeed += acel;
@@ -128,7 +136,7 @@ int main() {
                             bgSpeed = 0;
                         }
                     }
-                    else {pos_pista_x += bgSpeed;}
+                    else {pos_pista_x -= bgSpeed;}
                     if (SpriteTimer < -100) {
                         estado_player = 2;
                         SpriteTimer = -100;
@@ -157,22 +165,32 @@ int main() {
                     estado_player = 0;
                 }
 
-
-
-                // Lógica para voltar ao menu
+                // Atualização da animação do carro
+                SpriteTimer += GetFrameTime();
+                if (SpriteTimer >= 0.1f) {
+                    if (estado_player == 1) estado_player = 2;
+                    else if (estado_player == 2) estado_player = 0;
+                    else if (estado_player == 3) estado_player = 4;
+                    else if (estado_player == 4) estado_player = 0;
+                    SpriteTimer = 0.0f;
+                }
+                                
+                // Lógica para detectar clique no botão de saída na tela de ranking
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     Vector2 mousePoint = GetMousePosition();
                     if (CheckCollisionPointRec(mousePoint, (Rectangle){s_width / 2 - buttonExit.width / 2, 50, buttonExit.width, buttonExit.height})) {
                         screenAtual = MENUS;
                     }
                 }
-                break;
 
+                // Atualização do velocímetro
+                DrawVelocimetro(bgSpeed, maxSpeed);
+
+                break;
 
             case R_screen:
                 DrawRScreen(buttonExit);
-
-                // Lógica para voltar ao menu
+                // Lógica para detectar clique no botão de saída na tela de ranking
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     Vector2 mousePoint = GetMousePosition();
                     if (CheckCollisionPointRec(mousePoint, (Rectangle){s_width / 2 - buttonExit.width / 2, 50, buttonExit.width, buttonExit.height})) {
@@ -185,7 +203,7 @@ int main() {
         EndDrawing();
     }
 
-    // Descarregamento das texturas e fechamento da janela
+    // Descarregamento das texturas
     UnloadTexture(Pista);
     UnloadTexture(BG);
     UnloadTexture(menuBG);
@@ -197,31 +215,62 @@ int main() {
     UnloadTexture(buttonExit);
     UnloadTexture(buttonPlay);
     UnloadTexture(buttonOptions);
+    UnloadTexture(obstacleTexture);
 
+    // Fechamento da janela
     CloseWindow();
+
     return 0;
 }
 
-// Chama variavel de desenhar a tela de Menu
+void InitObstacles() {
+    for (int i = 0; i < MAX_OBSTACULOS; i++) {
+        obstaculos[i].position = (Vector2){0, 0};
+        obstaculos[i].texture = obstacleTexture;
+        obstaculos[i].Ativo = false;
+    }
+}
+
+void SpawnObstacle(float pistaX, float pistaY) {
+    for (int i = 0; i < MAX_OBSTACULOS; i++) {
+        if (!obstaculos[i].Ativo) {
+            obstaculos[i].position = (Vector2){pistaX, pistaY};
+            obstaculos[i].Ativo = true;
+            break;
+        }
+    }
+}
+
+void UpdateAndDrawObstacles(float bgSpeed) {
+    for (int i = 0; i < MAX_OBSTACULOS; i++) {
+        if (obstaculos[i].Ativo) {
+            obstaculos[i].position.y += bgSpeed;
+            if (obstaculos[i].position.y > s_height) {
+                obstaculos[i].Ativo = false;
+            } else {
+                DrawTexture(obstaculos[i].texture, obstaculos[i].position.x, obstaculos[i].position.y, WHITE);
+            }
+        }
+    }
+}
+
 void DrawMScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOptions, Texture2D buttonExit) {
     ClearBackground(BLACK); 
-    // Desenha elementos da tela
     DrawTexture(menuBG, 265, 50, WHITE);  
     DrawTexture(buttonPlay, s_width / 2 - 150, 100, WHITE);
     DrawTexture(buttonOptions, s_width / 2 - 150, 250, WHITE);
     DrawTexture(buttonExit, s_width / 2 - 150, 650, WHITE);
 }
 
-// Chama variavel de desenhar a tela de jogo
 void DrawPScreen(Texture2D buttonExit, Texture2D Pista, Texture2D BG, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float bgSpeed, int *estado_player, float *SpriteTimer, float scale) {
     int pos_x_player = 465;
     int pos_y_player = 800;
     int pos_BG_y = 300;
 
-
     ClearBackground(DARKPURPLE);
     float currentY = *pos_pista_y; // Define onde começa a desenhar a pista
     scale = 0.9;
+
     // Desenhar as camadas da pista para criar a perspectiva
     while (currentY > pos_BG_y - Pista.height * scale) {
         // Calcular a posição x para centralizar a pista
@@ -229,6 +278,9 @@ void DrawPScreen(Texture2D buttonExit, Texture2D Pista, Texture2D BG, Texture2D 
 
         // Desenha a textura da pista com a escala
         DrawTextureEx(Pista, (Vector2){posX, currentY}, 0.0f, scale, WHITE);
+
+        // Spawn an obstacle on this new section of the road
+        SpawnObstacle(posX + (Pista.width * scale) / 2, currentY);
 
         // Atualiza a posição vertical para a próxima camada
         currentY -= Pista.height * scale;
@@ -256,14 +308,16 @@ void DrawPScreen(Texture2D buttonExit, Texture2D Pista, Texture2D BG, Texture2D 
             break;
     }
 
+    // Atualiza e desenha obstáculos
+    UpdateAndDrawObstacles(bgSpeed);
+
     // Desenha o botão de saída
     DrawTexture(buttonExit, s_width / 2 - buttonExit.width / 2, 50, WHITE);
 }
 
-// Chama variavel de desenhar a tela de ranking
 void DrawRScreen(Texture2D buttonExit) {
     ClearBackground(BLUE);
-    DrawText("Ranking Screen", s_width / 2 - MeasureText("Ranking Screen", 20) / 2, s_heigh / 2 - 10, 20, WHITE);
+    DrawText("Ranking Screen", s_width / 2 - MeasureText("Ranking Screen", 20) / 2, s_height / 2 - 10, 20, WHITE);
     DrawTexture(buttonExit, s_width / 2 - buttonExit.width / 2, 50, WHITE);
 }
 
@@ -277,9 +331,8 @@ void DrawVelocimetro(float speed, float max) {
     int text_pos_x = 875;
     int text_pos_y = 370;
 
-
-    DrawRectangle(text_pos_x - 5, text_pos_y - 5, textWidth +10, 25+10, BLACK);
+    DrawRectangle(text_pos_x - 5, text_pos_y - 5, textWidth + 10, 25 + 10, BLACK);
 
     // Texto com a velocidade
-    DrawText(TextFormat("%.0f Km/h", Kmh),text_pos_x ,text_pos_y , 25, GOLD);
+    DrawText(TextFormat("%.0f Km/h", Kmh), text_pos_x, text_pos_y, 25, GOLD);
 }
