@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include <stdio.h>
+#include <math.h>
 
 // Definição das constantes
 #define s_width 1029 
@@ -22,10 +23,10 @@ typedef struct {
 
 // Funções para desenhar as texturas de cada tela
 void DrawMScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOptions, Texture2D buttonExit);
-void DrawPScreen(Texture2D buttonExit, Texture2D Pista, Texture2D BG, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale);
+void DrawPScreen(Texture2D buttonExit, Texture2D Pista,Texture2D Background, Texture2D BG, Texture2D Sky, Texture2D BG2, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale);
 void DrawRScreen(Texture2D buttonExit);
 void DrawVelocimetro(float speed, float max);
-void InitObstacles(Texture2D obstacleTexture);
+void InitObstaculo(Texture2D obstacleTexture);
 void SpawnObstacle(float pistaX, float pistaY, float pistaWidth, Texture2D obstacleTexture, float pistaScale, Texture2D Pista);
 void UpdateAndDrawObstacles(float bgSpeed, float bgSpeedX, int estado_player);
 
@@ -37,14 +38,19 @@ int main() {
     InitWindow(s_width, s_height, "AE86 Race");
 
     // Carregamento das texturas
-    Texture2D Pista = LoadTexture("play-img/Pista.png");
-    Texture2D BG = LoadTexture("play-img/BG.png");
+    Texture2D Pista = LoadTexture("play-img/Pista - Copia (2).png");
+    Texture2D Background= LoadTexture("play-img/BG.png");
+    Texture2D BG = LoadTexture("play-img/montanhas1.png");
+    Texture2D BG2 = LoadTexture("play-img/montanhas.png");
+    Texture2D Sky = LoadTexture("play-img/ceu.png");
     Texture2D menuBG = LoadTexture("menu-img/MENU.png");
-    Texture2D Jogador = LoadTexture("RAFAARTE/sprites carro/teste (2).png");
-    Texture2D Jogador_D1 = LoadTexture("RAFAARTE/sprites carro/teste (4)D.png");
-    Texture2D Jogador_D2 = LoadTexture("RAFAARTE/sprites carro/teste (5)D.png");
-    Texture2D Jogador_E1 = LoadTexture("RAFAARTE/sprites carro/teste (4).png");
-    Texture2D Jogador_E2 = LoadTexture("RAFAARTE/sprites carro/teste (5).png");
+    Texture2D Jogador = LoadTexture("play-img/carro.png");
+    Texture2D Jogador_D1 = LoadTexture("play-img/carro_direita1.png");
+    Texture2D Jogador_D2 = LoadTexture("play-img/carro_direita2.png");
+    Texture2D Jogador_D3 = LoadTexture("play-img/carro_direita3.png");
+    Texture2D Jogador_E1 = LoadTexture("play-img/carro_esquerda1.png");
+    Texture2D Jogador_E2 = LoadTexture("play-img/carro_esquerda2.png");
+    Texture2D Jogador_E3 = LoadTexture("play-img/carro_esquerda3.png");
     Texture2D buttonExit = LoadTexture("menu-img/quit.png");
     Texture2D buttonPlay = LoadTexture("menu-img/play.png");
     Texture2D buttonOptions = LoadTexture("menu-img/play_hover.png");
@@ -55,18 +61,18 @@ int main() {
     float bgSpeedX = 0.4; // Velocidade da curva
     float bgSpeed = 0.0; 
     float maxSpeed = 0.7; // Velocidade máxima
-    const float initiAcel = 0.000008; // Aceleração inicial
+    const float initiAcel = 0.00001; // Aceleração inicial
     const float initiDesacel = 0.0001; // Desaceleração inicial
     float acel = initiAcel;
     float SpriteTimer = 0.0;
     int estado_player = 0;
     float pos_pista_x = s_width / 2;
     float pos_pista_y = s_height - 120;
-    float pistaScale = 0.5f; // Fator de escala para a pista
+    float pistaScale = 0.8f; // Fator de escala para a pista
     int pos_x_player = 465;
-    int pos_y_player = 800;
+    int pos_y_player = 720;
 
-    InitObstacles(obstacleTexture);
+    InitObstaculo(obstacleTexture);
 
     // Temporizador para geração de obstáculos
     float obstacleSpawnTimer = 0.0f;
@@ -98,17 +104,36 @@ int main() {
                 break;
 
             case P_screen:
-                DrawPScreen(buttonExit, Pista, BG, Jogador, Jogador_D1, Jogador_D2, Jogador_E1, Jogador_E2, &pos_pista_x, &pos_pista_y, bgSpeed, bgSpeedX, &estado_player, &SpriteTimer, pistaScale);
+                DrawPScreen(buttonExit, Pista, Background, BG,  Sky, BG2, Jogador, Jogador_D1, Jogador_D2, Jogador_E1, Jogador_E2, &pos_pista_x, &pos_pista_y, bgSpeed, bgSpeedX, &estado_player, &SpriteTimer, pistaScale);
 
                 // Atualização da posição e velocidade da pista
-                pos_pista_y += bgSpeed;
+                pos_pista_y += bgSpeed * 1.2;
+                
+                // Checa se 
+                if (pos_x_player + Jogador.width -20 > (pos_pista_x + (Pista.width * pistaScale) / 2) -56  ){
+                    if ( bgSpeed > (20 * 0.7)/195) {// Diminui ate 20Kmh
+                    bgSpeed -= initiDesacel; // Usar a desaceleração inicial para desacelerar
+                        if (pos_x_player + Jogador.width - 20> (pos_pista_x + (Pista.width * pistaScale) / 2)){
+                        pos_pista_x += bgSpeedX;
+                        }
+                    }
+                }
+
+                if (pos_x_player +20 < (pos_pista_x - (Pista.width * pistaScale) / 2) +56 ){
+                    if ( bgSpeed > (20 * 0.7)/195) {// Diminui ate 20Kmh
+                    bgSpeed -= initiDesacel; // Usar a desaceleração inicial para desacelerar
+                        if (pos_x_player +20< (pos_pista_x - (Pista.width * pistaScale) / 2)  ){
+                        pos_pista_x -= bgSpeedX;
+                        }
+                    }
+                }
 
                 if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) {
                     // Aumentar a velocidade gradualmente até a velocidade máxima
                     if (bgSpeed < maxSpeed) {
                         bgSpeed += acel;
                         if (bgSpeed > 0.005) {
-                            acel += 0.000000001;
+                            acel += 0.00000001;
                         }
                         if (bgSpeed > maxSpeed) {
                             bgSpeed = maxSpeed;
@@ -146,9 +171,12 @@ int main() {
                     } else {
                         pos_pista_x -= bgSpeed;
                     }
-                    if (SpriteTimer > 100) {
+                    if (SpriteTimer > 50) {
                         estado_player = 2;
+                        if (SpriteTimer > 100) {
+                        estado_player = 3;
                         SpriteTimer = 101;
+                        }
                     } else {
                         estado_player = 1;
                     }
@@ -164,11 +192,14 @@ int main() {
                     } else {
                         pos_pista_x += bgSpeed;
                     }
-                    if (SpriteTimer < -100) {
-                        estado_player = 4;
-                        SpriteTimer = -100;
+                    if (SpriteTimer < -50) {
+                        estado_player = 5;
+                        if (SpriteTimer < -100) {
+                        SpriteTimer = -101;
+                        estado_player = 6;
+                        }
                     } else {
-                        estado_player = 3;
+                        estado_player = 4;
                     }
                 } else {
                     SpriteTimer = 0;
@@ -184,13 +215,19 @@ int main() {
                         DrawTexture(Jogador_D1, pos_x_player, pos_y_player, WHITE); // Sprite de curva direita 1
                         break;
                     case 2:
-                        DrawTexture(Jogador_D2, pos_x_player, pos_y_player, WHITE); // Sprite de curva direita 2
+                        DrawTexture(Jogador_D2, pos_x_player, pos_y_player, WHITE); // Sprite de curva direita 1
                         break;
                     case 3:
-                        DrawTexture(Jogador_E1, pos_x_player, pos_y_player, WHITE); // Sprite de curva esquerda 1
+                        DrawTexture(Jogador_D3, pos_x_player, pos_y_player, WHITE); // Sprite de curva direita 2
                         break;
                     case 4:
-                        DrawTexture(Jogador_E2, pos_x_player, pos_y_player, WHITE); // Sprite de curva esquerda 2
+                        DrawTexture(Jogador_E1, pos_x_player, pos_y_player, WHITE); // Sprite de curva esquerda 1
+                        break;
+                    case 5:
+                        DrawTexture(Jogador_E2, pos_x_player, pos_y_player, WHITE); // Sprite de curva esquerda 1
+                        break;
+                    case 6:
+                        DrawTexture(Jogador_E3, pos_x_player, pos_y_player, WHITE); // Sprite de curva esquerda 2
                         break;
                 }
 
@@ -233,7 +270,10 @@ int main() {
 
     // Descarregamento das texturas
     UnloadTexture(Pista);
+    UnloadTexture(Background);
     UnloadTexture(BG);
+    UnloadTexture(BG2);   
+    UnloadTexture(Sky);
     UnloadTexture(menuBG);
     UnloadTexture(Jogador);
     UnloadTexture(Jogador_D1);
@@ -252,7 +292,7 @@ int main() {
 }
 
 // Função para inicializar os obstáculos
-void InitObstacles(Texture2D obstacleTexture) {
+void InitObstaculo(Texture2D obstacleTexture) {
     for (int i = 0; i < MAX_OBSTACULOS; i++) {
         // Inicializa a posição do obstáculo como (0, 0)
         obstaculos[i].position = (Vector2){0, 0};
@@ -312,7 +352,8 @@ void DrawMScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOptions
     DrawTexture(buttonExit, s_width / 2 - 150, 650, WHITE);
 }
 
-void DrawPScreen(Texture2D buttonExit, Texture2D Pista, Texture2D BG, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale) {
+void DrawPScreen(Texture2D buttonExit, Texture2D Pista,Texture2D Background, Texture2D BG,Texture2D Sky, Texture2D BG2, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale) {
+
     int pos_BG_y = 300;
 
     ClearBackground(DARKPURPLE);
@@ -332,12 +373,18 @@ void DrawPScreen(Texture2D buttonExit, Texture2D Pista, Texture2D BG, Texture2D 
     }
 
     // Desenha o fundo depois
-    DrawTexture(BG, 0, pos_BG_y, WHITE);
+    DrawTextureEx(Sky , (Vector2){0, -300}, 0, 0.9, WHITE);
+    DrawTextureEx(BG2 , (Vector2){-100, 75}, 0, 0.8, WHITE);    
+    DrawTextureEx(BG2 , (Vector2){600, 115}, 0, 0.8, WHITE);
+    DrawTextureEx(BG , (Vector2){0, 0}, 0, 0.8, WHITE);
+    DrawTextureEx(Background , (Vector2){0, 300}, 0, 1, WHITE);
+
     // Atualiza e desenha obstáculos
     UpdateAndDrawObstacles(bgSpeed, bgSpeedX, *estado_player);
 
     // Desenha o gotão de saída
     DrawTexture(buttonExit, s_width / 2 - buttonExit.width / 2, 50, WHITE);
+    
 }
 
 void DrawRScreen(Texture2D buttonExit) {
@@ -346,18 +393,49 @@ void DrawRScreen(Texture2D buttonExit) {
     DrawTexture(buttonExit, s_width / 2 - buttonExit.width / 2, 50, WHITE);
 }
 
-void DrawVelocimetro(float speed, float max) {
+void DrawVelocimetro(float speed, float maxSpeed) {
     // Convertendo a velocidade de pixels por frame para Km/h
-    float Kmh = (speed * 195) / max;
+    float Kmh = (speed * 195) / maxSpeed;
 
-    // Medir as dimensões do texto
+    // Limitando o valor máximo do velocímetro a 195 km/h
+    if (Kmh > 195)
+        Kmh = 195;
+
+    // Medindo as dimensões do texto
     float textWidth = MeasureText(TextFormat("%.0f Km/h", Kmh), 25);
 
-    int text_pos_x = 875;
-    int text_pos_y = 370;
+    // Definindo a posição inicial do velocímetro (canto superior esquerdo)
+    int posX = 800;
+    int posY = 665;
+    int centerPosX = posX + 150;
+    int centerPosY = posY + 150;
 
-    DrawRectangle(text_pos_x - 5, text_pos_y - 5, textWidth + 10, 25 + 10, BLACK);
+    // Definindo o ângulo do ponteiro (sentido anti-horário, 0° é à direita)
+    float angle = 220 - Kmh * 1.128; 
 
-    // Texto com a velocidade
-    DrawText(TextFormat("%.0f Km/h", Kmh), text_pos_x, text_pos_y, 25, GOLD);
+    // Normalizando o ângulo para o intervalo [0, 360]
+    angle = fmod(angle, 360);
+    if (angle < 0)
+        angle += 360;
+
+
+    // Desenhando o círculo do velocímetro (centro)
+    DrawCircle(centerPosX, centerPosY, 70, Fade(BLACK, 0.9));
+
+    // Desenhando o contorno cinza escuro ao redor do velocímetro
+    DrawRing((Vector2){ centerPosX, centerPosY }, 72, 67, 0, 360, 20, DARKGRAY);
+
+    // Desenhando a linha do velocímetro
+    DrawLine(centerPosX, centerPosY, centerPosX + 50 * cos(angle * DEG2RAD), centerPosY - 50 * sin(angle * DEG2RAD), RED);
+
+    // Posição da bola vermelha (indicador da velocidade)
+    float indicatorX = centerPosX + 50 * cos(angle * DEG2RAD);
+    float indicatorY = centerPosY - 50 * sin(angle * DEG2RAD);
+
+    // Desenhando o indicador da velocidade atual (bola vermelha)
+    DrawCircle(indicatorX, indicatorY, 5, RED);
+
+    // Desenhando o texto com a velocidade
+    DrawText(TextFormat("%.0f Km/h", Kmh), centerPosX - textWidth / 2 +20, centerPosY + 40, 15, GREEN);
 }
+
