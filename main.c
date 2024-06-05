@@ -22,13 +22,13 @@ typedef struct {
 } Obstaculo;
 
 // Funçoes para desenhar as texturas de cada tela
-void DrawMScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOptions, Texture2D buttonExit);
-void DrawPScreen(Texture2D buttonExit, Texture2D Pista,Texture2D Background, Texture2D BG, Texture2D Sky, Texture2D BG2, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale, int pos_x_player);
+void DrawMScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOptions, Texture2D buttonExit);                    // OS * servem para definir ponteiros para podermos modificalos dentro da função
+void DrawPScreen(Texture2D buttonExit, Texture2D Pista,Texture2D Background, Texture2D BG, Texture2D Sky, Texture2D BG2, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float *bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale, int pos_x_player, Rectangle AreaJogador);
 void DrawRScreen(Texture2D buttonExit);
 void DrawVelocimetro(float speed, float max);
 void InitObstaculo(Texture2D obstacleTexture);
 void SpawnObstaculo(float pistaX, float pistaY, float pistaWidth, Texture2D obstacleTexture, float pistaScale, Texture2D Pista);
-void UpdateEDrawObstaculo(float bgSpeed, float bgSpeedX, int estado_player, float posX , Texture2D Pista,  Texture2D Jogador, int pos_x_player);
+void UpdateEDrawObstaculo(float *bgSpeed, float bgSpeedX, int estado_player, float posX , Texture2D Pista,  Texture2D Jogador, int pos_x_player, Rectangle AreaJogador);
 
 Obstaculo obstaculos[MAX_OBSTACULOS];
 Texture2D obstacleTexture;
@@ -71,6 +71,8 @@ int main() {
     int pos_x_player = 465;
     int pos_y_player = 720;
 
+    Rectangle AreaJogador = { pos_x_player, 720, Jogador.width, Jogador.height };
+
     InitObstaculo(obstacleTexture);
 
     // Temporizador para geração de obstaculos
@@ -104,7 +106,7 @@ int main() {
                 break;
 
             case P_screen:
-                DrawPScreen(buttonExit, Pista, Background, BG,  Sky, BG2, Jogador, Jogador_D1, Jogador_D2, Jogador_E1, Jogador_E2, &pos_pista_x, &pos_pista_y, bgSpeed, bgSpeedX, &estado_player, &SpriteTimer, pistaScale, pos_x_player);
+                DrawPScreen(buttonExit, Pista, Background, BG,  Sky, BG2, Jogador, Jogador_D1, Jogador_D2, Jogador_E1, Jogador_E2, &pos_pista_x, &pos_pista_y, &bgSpeed, bgSpeedX, &estado_player, &SpriteTimer, pistaScale, pos_x_player, AreaJogador);
 
                 // Atualização da posição e velocidade da pista
                 pos_pista_y += bgSpeed * 1.2;
@@ -242,7 +244,7 @@ int main() {
                 }
 
                 // Atualiza e desenha obstaculos
-                UpdateEDrawObstaculo(bgSpeed, bgSpeedX, estado_player, pos_pista_x, Pista, Jogador, pos_x_player );
+                UpdateEDrawObstaculo(&bgSpeed, bgSpeedX, estado_player, pos_pista_x, Pista, Jogador, pos_x_player , AreaJogador);
 
                 // Logica para detectar clique no botão de saida na tela de ranking
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -321,12 +323,12 @@ void SpawnObstaculo(float pistaX, float pistaY, float pistaWidth, Texture2D obst
     }
 }
 
-void UpdateEDrawObstaculo(float bgSpeed, float bgSpeedX, int estado_player ,float posX , Texture2D Pista , Texture2D Jogador, int pos_x_player) {
+void UpdateEDrawObstaculo(float *bgSpeed, float bgSpeedX, int estado_player ,float posX , Texture2D Pista , Texture2D Jogador, int pos_x_player, Rectangle AreaJogador) {
     for (int i = 0; i < MAX_OBSTACULOS; i++) {
         if (obstaculos[i].Ativo) {
             // Atualiza a posição vertical do obstaculo com base na velocidade da pista
-            obstaculos[i].position.y += bgSpeed;
-            
+            obstaculos[i].position.y += *bgSpeed;
+
             // Se não na borda aceita movimento
             if ( pos_x_player + 20 > posX && pos_x_player  + Jogador.width -20< posX + Pista.width){            // 465 = pos X do jogador  98 = Jodador.width 
                 // Atualiza a posição horizontal do obstaculo com base no movimento lateral do jogador
@@ -343,6 +345,19 @@ void UpdateEDrawObstaculo(float bgSpeed, float bgSpeedX, int estado_player ,floa
                 // Desenha o obstaculo na tela
                 DrawTexture(obstaculos[i].texture, obstaculos[i].position.x, obstaculos[i].position.y, WHITE);
             }
+            // Desenha o círculo de colisão (invisível)
+            float obstacleRadius = obstaculos[i].texture.width / 2.0f;
+            Vector2 obstacleCenter = {obstaculos[i].position.x + obstacleRadius, obstaculos[i].position.y + obstacleRadius};
+            //DrawCircleV(obstacleCenter, obstacleRadius, Fade(RED, 0.5)); // Descomentar para visualizar o círculo de colisão
+
+            // Verifica a colisão
+            if (CheckCollisionCircleRec(obstacleCenter, obstacleRadius, AreaJogador)) {
+                // Reduz a velocidade ao colidir com um obstáculo
+                *bgSpeed -= 0.4f; // Diminui a velocidaed
+                if (*bgSpeed <= 0.1) {
+                    *bgSpeed = 0.1;
+                }
+            }
         }
     }
 }
@@ -358,8 +373,7 @@ void DrawMScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOptions
     DrawTexture(buttonExit, s_width / 2 - 150, 650, WHITE);
 }
 
-void DrawPScreen(Texture2D buttonExit, Texture2D Pista,Texture2D Background, Texture2D BG,Texture2D Sky, Texture2D BG2, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale,  int pos_x_player) {
-
+void DrawPScreen(Texture2D buttonExit, Texture2D Pista, Texture2D Background, Texture2D BG,Texture2D Sky, Texture2D BG2, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float *bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale,  int pos_x_player, Rectangle AreaJogador) { 
     int pos_BG_y = 300;
 
     ClearBackground(DARKPURPLE);
@@ -370,7 +384,6 @@ void DrawPScreen(Texture2D buttonExit, Texture2D Pista,Texture2D Background, Tex
         // Calcular a posição x para centralizar a pista
         float posX = *pos_pista_x;
 
-        
         // Desenha a textura da pista com a escala
         DrawTextureEx(Pista, (Vector2){posX, currentY}, 0.0f, scale, WHITE);
 
@@ -379,7 +392,7 @@ void DrawPScreen(Texture2D buttonExit, Texture2D Pista,Texture2D Background, Tex
     }
 
     // Atualiza e desenha obstaculos
-    UpdateEDrawObstaculo(bgSpeed, bgSpeedX, *estado_player, *pos_pista_x , Pista,  Jogador,  pos_x_player);
+    UpdateEDrawObstaculo( *&bgSpeed , bgSpeedX, *estado_player, *pos_pista_x , Pista, Jogador, pos_x_player, AreaJogador); 
 
     // Desenha o fundo depois
     DrawTextureEx(Sky , (Vector2){0, -300}, 0, 0.9, WHITE);
@@ -388,11 +401,8 @@ void DrawPScreen(Texture2D buttonExit, Texture2D Pista,Texture2D Background, Tex
     DrawTextureEx(BG , (Vector2){0, 0}, 0, 0.8, WHITE);
     DrawTextureEx(Background , (Vector2){0, 300}, 0, 1, WHITE);
 
-
-
     // Desenha o gotão de saida
     DrawTexture(buttonExit, s_width / 2 - buttonExit.width / 2, 50, WHITE);
-    
 }
 
 void DrawRScreen(Texture2D buttonExit) {
