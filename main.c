@@ -3,9 +3,9 @@
 #include <math.h>
 
 // Definição das constantes
-#define s_width 1029 
+#define s_width 1024
 #define s_height 900
-#define MAX_OBSTACULOS 20
+#define MAX_OBSTACULOS 500
 
 // Enumeração para as telas do menu
 typedef enum {
@@ -23,7 +23,7 @@ typedef struct {
 
 // Funçoes para desenhar as texturas de cada tela
 void DrawMScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOptions, Texture2D buttonExit);                    // OS * servem para definir ponteiros para podermos modificalos dentro da função
-void DrawPScreen(Texture2D buttonExit, Texture2D Pista,Texture2D Background, Texture2D BG, Texture2D Sky, Texture2D BG2, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float *bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale, int pos_x_player, Rectangle AreaJogador);
+void DrawPScreen(Texture2D buttonExit, Texture2D Pista,Texture2D Background, Texture2D BG, Texture2D Sky, Texture2D BG2, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float *bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale, int pos_x_player, Rectangle AreaJogador, Texture2D Grama);
 void DrawRScreen(Texture2D buttonExit);
 void DrawVelocimetro(float speed, float max);
 void InitObstaculo(Texture2D obstacleTexture);
@@ -37,7 +37,15 @@ int main() {
     // Inicialização da janela
     InitWindow(s_width, s_height, "AE86 Race");
 
+    // Inicialização do áudio
+    InitAudioDevice();
+
+    // Carregamento da música
+    Music music = LoadMusicStream("Audios/Musica.wav");
+    PlayMusicStream(music);
+
     // Carregamento das texturas
+    Texture2D Grama = LoadTexture("play-img/grama2.png");
     Texture2D Pista = LoadTexture("play-img/Pista - Copia (2).png");
     Texture2D Background= LoadTexture("play-img/BG.png");
     Texture2D BG = LoadTexture("play-img/montanhas1.png");
@@ -60,7 +68,7 @@ int main() {
     Screen screenAtual = MENUS;
     float bgSpeed = 0.0;
     float maxSpeed = 0.7; // Velocidade maxima
-    const float initiAcel = 0.00001; // Aceleração inicial
+    const float initiAcel = 0.00003; // Aceleração inicial
     const float initiDesacel = 0.0001; // Desaceleração inicial
     float acel = initiAcel;
     float SpriteTimer = 0.0;
@@ -81,6 +89,9 @@ int main() {
 
     // Loop principal
     while (!WindowShouldClose()) {
+
+        UpdateMusicStream(music);
+
         float bgSpeedX = bgSpeed; // Velocidade da curva
         // Atualização do temporizador de obstaculos
         obstacleSpawnTimer += GetFrameTime();
@@ -106,23 +117,23 @@ int main() {
                 break;
 
             case P_screen:
-                DrawPScreen(buttonExit, Pista, Background, BG,  Sky, BG2, Jogador, Jogador_D1, Jogador_D2, Jogador_E1, Jogador_E2, &pos_pista_x, &pos_pista_y, &bgSpeed, bgSpeedX, &estado_player, &SpriteTimer, pistaScale, pos_x_player, AreaJogador);
+                DrawPScreen(buttonExit, Pista, Background, BG,  Sky, BG2, Jogador, Jogador_D1, Jogador_D2, Jogador_E1, Jogador_E2, &pos_pista_x, &pos_pista_y, &bgSpeed, bgSpeedX, &estado_player, &SpriteTimer, pistaScale, pos_x_player, AreaJogador, Grama);
 
                 // Atualização da posição e velocidade da pista
                 pos_pista_y += bgSpeed * 1.2;
                 
                 // Checa se jogador colide com lado direito da pista
-                if (pos_x_player  > (pos_pista_x + (Pista.width * pistaScale) ) -56  ){
-                    if ( bgSpeed > (20 * 0.7)/195) {// Diminui ate 20Kmh
+                if (pos_x_player + Jogador.width > (pos_pista_x + (Pista.width * pistaScale) ) -56  ){
+                    if ( bgSpeed > (20 * maxSpeed)/195) {// Diminui ate 20Kmh
                     bgSpeed -= initiDesacel; // Usar a desaceleração inicial para desacelerar
                     }
                     if (pos_x_player + Jogador.width  - 20> (pos_pista_x + (Pista.width * pistaScale) )){
                         pos_pista_x += bgSpeedX;
                     }
                 }
-                // Checa se jogador colide com lado es2querdo da pista
+                // Checa se jogador colide com lado esquerdo da pista
                 if (pos_x_player +20 < (pos_pista_x) +56 ){
-                    if ( bgSpeed > (20 * 0.7)/195) {// Diminui ate 20Kmh
+                    if ( bgSpeed > (20 * maxSpeed)/195) {// Diminui ate 20Kmh
                     bgSpeed -= initiDesacel; // Usar a desaceleração inicial para desacelerar
                     }
                     if (pos_x_player +20< (pos_pista_x) ){
@@ -174,11 +185,11 @@ int main() {
                     } else {
                         pos_pista_x -= bgSpeedX;
                     }
-                    if (SpriteTimer > 50) {
+                    if (SpriteTimer > 25) {
                         estado_player = 2;
-                        if (SpriteTimer > 100) {
+                        if (SpriteTimer > 50) {
                         estado_player = 3;
-                        SpriteTimer = 101;
+                        SpriteTimer = 51;
                         }
                     } else {
                         estado_player = 1;
@@ -197,10 +208,10 @@ int main() {
                         bgSpeedX = bgSpeed;
                         pos_pista_x += bgSpeedX;
                     }
-                    if (SpriteTimer < -50) {
+                    if (SpriteTimer < -25) {
                         estado_player = 5;
-                        if (SpriteTimer < -100) {
-                        SpriteTimer = -101;
+                        if (SpriteTimer < -50) {
+                        SpriteTimer = -51;
                         estado_player = 6;
                         }
                     } else {
@@ -291,6 +302,9 @@ int main() {
     UnloadTexture(buttonOptions);
     UnloadTexture(obstacleTexture);
 
+    UnloadMusicStream(music);
+    CloseAudioDevice();
+
     // Fechamento da janela
     CloseWindow();
 
@@ -325,12 +339,13 @@ void SpawnObstaculo(float pistaX, float pistaY, float pistaWidth, Texture2D obst
 
 void UpdateEDrawObstaculo(float *bgSpeed, float bgSpeedX, int estado_player ,float posX , Texture2D Pista , Texture2D Jogador, int pos_x_player, Rectangle AreaJogador) {
     for (int i = 0; i < MAX_OBSTACULOS; i++) {
+
         if (obstaculos[i].Ativo) {
             // Atualiza a posição vertical do obstaculo com base na velocidade da pista
-            obstaculos[i].position.y += *bgSpeed;
+            obstaculos[i].position.y += *bgSpeed ;
 
             // Se não na borda aceita movimento
-            if ( pos_x_player + 20 > posX && pos_x_player  + Jogador.width -20< posX + Pista.width){            // 465 = pos X do jogador  98 = Jodador.width 
+            if ( pos_x_player + 20 > posX && pos_x_player  + Jogador.width -20< posX + Pista.width){            
                 // Atualiza a posição horizontal do obstaculo com base no movimento lateral do jogador
                 if (estado_player <= 3 && estado_player != 0) { // Move para a direita
                     obstaculos[i].position.x -= bgSpeedX * 0.5;
@@ -348,12 +363,15 @@ void UpdateEDrawObstaculo(float *bgSpeed, float bgSpeedX, int estado_player ,flo
             // Desenha o círculo de colisão (invisível)
             float obstacleRadius = obstaculos[i].texture.width / 2.0f;
             Vector2 obstacleCenter = {obstaculos[i].position.x + obstacleRadius, obstaculos[i].position.y + obstacleRadius};
-            //DrawCircleV(obstacleCenter, obstacleRadius, Fade(RED, 0.5)); // Descomentar para visualizar o círculo de colisão
+            DrawCircleV(obstacleCenter, obstacleRadius, Fade(RED, 0.5)); // Descomentar para visualizar o círculo de colisão
 
             // Verifica a colisão
             if (CheckCollisionCircleRec(obstacleCenter, obstacleRadius, AreaJogador)) {
+
                 // Reduz a velocidade ao colidir com um obstáculo
-                *bgSpeed -= 0.4f; // Diminui a velocidaed
+                *bgSpeed -= 0.1f; // Diminui a velocidaed
+
+
                 if (*bgSpeed <= 0.1) {
                     *bgSpeed = 0.1;
                 }
@@ -373,7 +391,7 @@ void DrawMScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOptions
     DrawTexture(buttonExit, s_width / 2 - 150, 650, WHITE);
 }
 
-void DrawPScreen(Texture2D buttonExit, Texture2D Pista, Texture2D Background, Texture2D BG,Texture2D Sky, Texture2D BG2, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float *bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale,  int pos_x_player, Rectangle AreaJogador) { 
+void DrawPScreen(Texture2D buttonExit, Texture2D Pista, Texture2D Background, Texture2D BG,Texture2D Sky, Texture2D BG2, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float *bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale,  int pos_x_player, Rectangle AreaJogador, Texture2D Grama) { 
     int pos_BG_y = 300;
 
     ClearBackground(DARKPURPLE);
@@ -385,7 +403,11 @@ void DrawPScreen(Texture2D buttonExit, Texture2D Pista, Texture2D Background, Te
         float posX = *pos_pista_x;
 
         // Desenha a textura da pista com a escala
+        DrawTextureEx(Grama, (Vector2){posX - Grama.width, currentY}, 0.0f, 1.0f, WHITE);
+        DrawTextureEx(Grama, (Vector2){posX + (Pista.width*scale), currentY}, 0.0f, 1.0f, WHITE);
+
         DrawTextureEx(Pista, (Vector2){posX, currentY}, 0.0f, scale, WHITE);
+
 
         // Atualiza a posição vertical para a proxima camada
         currentY -= Pista.height * scale;
