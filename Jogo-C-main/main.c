@@ -11,7 +11,8 @@
 typedef enum {
     MENUS = 0,
     P_screen,
-    R_screen
+    R_screen,
+    Points_screen
 } Screen;
 
 // Struct pra representar um obstaculo
@@ -79,6 +80,8 @@ int main() {
     float pos_pista_y = s_height - 120;
     int pos_x_player = 465;
     int pos_y_player = 720;
+    float timer = 30.0f;
+    int Pontos = 30.0f;
 
     Rectangle AreaJogador = { pos_x_player, 720, Jogador.width, Jogador.height };
 
@@ -289,6 +292,20 @@ int main() {
                     }
                 }
                 break;
+            case Points_screen:
+                ClearBackground(BLACK);
+                float textPoints = MeasureText(TextFormat("%.0f Km/h", Pontos), 25);
+                DrawText(TextFormat("Pontuação: %", Pontos), s_width - textPoints , s_height + 40, 15, GREEN);
+                DrawTexture(buttonExit, s_width / 2 - buttonExit.width / 2, 50, WHITE);
+                   // Logica para detectar clique no botão de saida na tela de ranking
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                    Vector2 mousePoint = GetMousePosition();
+                    if (CheckCollisionPointRec(mousePoint, (Rectangle){s_width / 2 - buttonExit.width / 2, 50, buttonExit.width, buttonExit.height})) {
+                        screenAtual = MENUS;
+                    }
+                }
+            
+
         }
 
         EndDrawing();
@@ -349,7 +366,7 @@ void SpawnObstaculo(float pistaX, float pistaY, float pistaWidth, Texture2D obst
 void UpdateEDrawObstaculo(float *bgSpeed, float bgSpeedX, int estado_player, float posX, Texture2D Pista, Texture2D Jogador, int pos_x_player, Rectangle AreaJogador) {
     for (int i = 0; i < MAX_OBSTACULOS; i++) {
         if (obstaculos[i].Ativo) {
-            obstaculos[i].position.y += *bgSpeed;
+            obstaculos[i].position.y += *bgSpeed * 0.6;
             if (obstaculos[i].position.y < -obstaculos[i].texture.height) {
                 obstaculos[i].Ativo = false;
             }
