@@ -11,7 +11,8 @@
 typedef enum {
     MENUS = 0,
     P_screen,
-    R_screen
+    R_screen,
+    Points_screen
 } Screen;
 
 // Struct pra representar um obstaculo
@@ -25,7 +26,7 @@ typedef struct {
 void DrawMScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOptions, Texture2D buttonExit);                    // OS * servem para definir ponteiros para podermos modificalos dentro da função
 void DrawPScreen(Texture2D buttonExit, Texture2D Pista,Texture2D Background, Texture2D BG, Texture2D Sky, Texture2D BG2, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float *bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale, int pos_x_player, Rectangle AreaJogador, Texture2D Grama);
 void DrawRScreen(Texture2D buttonExit);
-void DrawVelocimetro(float speed, float max);
+void DrawVelocimetro(Texture2D Velocimetro,float speed, float max);
 void InitObstaculo(Texture2D obstacleTexture);
 void SpawnObstaculo(float pistaX, float pistaY, float pistaWidth, Texture2D obstacleTexture, float pistaScale, Texture2D Pista);
 void UpdateEDrawObstaculo(float *bgSpeed, float bgSpeedX, int estado_player, float posX , Texture2D Pista,  Texture2D Jogador, int pos_x_player, Rectangle AreaJogador);
@@ -62,6 +63,7 @@ int main() {
     Texture2D buttonExit = LoadTexture("menu-img/quit.png");
     Texture2D buttonPlay = LoadTexture("menu-img/play.png");
     Texture2D buttonOptions = LoadTexture("menu-img/play_hover.png");
+    Texture2D Velocimetro = LoadTexture("play-img/Velocimetro.png");
     obstacleTexture = LoadTexture("play-img/Obstaculo1.png");
 
     // Variaveis de controle
@@ -78,6 +80,8 @@ int main() {
     float pos_pista_y = s_height - 120;
     int pos_x_player = 465;
     int pos_y_player = 720;
+    float timer = 30.0f;
+    int Pontos = 30.0f;
 
     Rectangle AreaJogador = { pos_x_player, 720, Jogador.width, Jogador.height };
 
@@ -251,7 +255,15 @@ int main() {
                 if (obstacleSpawnTimer >= obstacleSpawnInterval) {
                     SpawnObstaculo(pos_pista_x , pos_pista_y, Pista.width * pistaScale, obstacleTexture, pistaScale, Pista);
                     obstacleSpawnTimer = 0.0f; // Reinicia o temporizador
-                    obstacleSpawnInterval = 0.2f;// Define o tempo paar spawnar como 2
+                    if (bgSpeed > (20 * maxSpeed)/195) {
+                    obstacleSpawnInterval = 0.4f;// Define o tempo paar spawnar como 2
+                        if (bgSpeed > (50 * maxSpeed)/195) {
+                        obstacleSpawnInterval = 0.3f;// Define o tempo paar spawnar como 2                    
+                            if (bgSpeed > (50 * maxSpeed)/195) {
+                               obstacleSpawnInterval = 0.3f;// Define o tempo paar spawnar como 2
+                            }
+                        }
+                    }
                 }
 
                 // Atualiza e desenha obstaculos
@@ -266,7 +278,7 @@ int main() {
                 }
 
                 // Atualização do velocimetro
-                DrawVelocimetro(bgSpeed, maxSpeed);
+                DrawVelocimetro( Velocimetro, bgSpeed, maxSpeed);
 
                 break;
 
@@ -280,6 +292,20 @@ int main() {
                     }
                 }
                 break;
+            case Points_screen:
+                ClearBackground(BLACK);
+                float textPoints = MeasureText(TextFormat("%.0f Km/h", Pontos), 25);
+                DrawText(TextFormat("Pontuação: %.0f", Pontos), s_width - textPoints , s_height + 40, 15, GREEN);
+                DrawTexture(buttonExit, s_width / 2 - buttonExit.width / 2, 50, WHITE);
+                   // Logica para detectar clique no botão de saida na tela de ranking
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                    Vector2 mousePoint = GetMousePosition();
+                    if (CheckCollisionPointRec(mousePoint, (Rectangle){s_width / 2 - buttonExit.width / 2, 50, buttonExit.width, buttonExit.height})) {
+                        screenAtual = MENUS;
+                    }
+                }
+            
+
         }
 
         EndDrawing();
@@ -329,7 +355,7 @@ void SpawnObstaculo(float pistaX, float pistaY, float pistaWidth, Texture2D obst
         // Verifica se ha algum obstaculo inativo para ser ativado
         if (!obstaculos[i].Ativo) {
             // Define a posição do obstaculo na pista, na parte superior visivel
-            obstaculos[i].position = (Vector2){ pistaX + GetRandomValue(56, pistaWidth - obstacleTexture.width - 56), pistaY - ((Pista.height * pistaScale)*(5*(i+1)))};
+            obstaculos[i].position = (Vector2){ pistaX + GetRandomValue(56, pistaWidth - obstacleTexture.width - 56), pistaY - ((Pista.height / 2 * pistaScale)*(5*(i+1)))};
             // Ativa o obstaculo
             obstaculos[i].Ativo = true;
             break; // Sai do loop apos ativar um obstaculo
@@ -337,43 +363,38 @@ void SpawnObstaculo(float pistaX, float pistaY, float pistaWidth, Texture2D obst
     }
 }
 
-void UpdateEDrawObstaculo(float *bgSpeed, float bgSpeedX, int estado_player ,float posX , Texture2D Pista , Texture2D Jogador, int pos_x_player, Rectangle AreaJogador) {
+void UpdateEDrawObstaculo(float *bgSpeed, float bgSpeedX, int estado_player, float posX, Texture2D Pista, Texture2D Jogador, int pos_x_player, Rectangle AreaJogador) {
     for (int i = 0; i < MAX_OBSTACULOS; i++) {
-
         if (obstaculos[i].Ativo) {
-            // Atualiza a posição vertical do obstaculo com base na velocidade da pista
-            obstaculos[i].position.y += *bgSpeed ;
-
-            // Se não na borda aceita movimento
-            if ( pos_x_player + 20 > posX && pos_x_player  + Jogador.width -20< posX + Pista.width){            
-                // Atualiza a posição horizontal do obstaculo com base no movimento lateral do jogador
-                if (estado_player <= 3 && estado_player != 0) { // Move para a direita
-                    obstaculos[i].position.x -= bgSpeedX * 0.5;
-                } else if (estado_player >= 4) { // Move para a esquerda
-                    obstaculos[i].position.x += bgSpeedX * 0.5;
-                }
-            }
-            // Verifica se o obstaculo saiu da tela
-            if (obstaculos[i].position.y > s_height) {
+            obstaculos[i].position.y += *bgSpeed * 0.6;
+            if (obstaculos[i].position.y < -obstaculos[i].texture.height) {
                 obstaculos[i].Ativo = false;
-            } else {
-                // Desenha o obstaculo na tela
-                DrawTexture(obstaculos[i].texture, obstaculos[i].position.x, obstaculos[i].position.y, WHITE);
             }
-            // Desenha o círculo de colisão (invisível)
-            float obstacleRadius = obstaculos[i].texture.width / 2.0f;
-            Vector2 obstacleCenter = {obstaculos[i].position.x + obstacleRadius, obstaculos[i].position.y + obstacleRadius};
-            DrawCircleV(obstacleCenter, obstacleRadius, Fade(RED, 0.5)); // Descomentar para visualizar o círculo de colisão
+            else {
+                if (obstaculos[i].position.y < 364) { // Verifica se o obstáculo está atrás do background
+                    // Não desenha o obstáculo se ele estiver atrás do background
+                    continue;
+                }
 
-            // Verifica a colisão
-            if (CheckCollisionCircleRec(obstacleCenter, obstacleRadius, AreaJogador)) {
+                if (pos_x_player + 20 > posX && pos_x_player + Jogador.width - 20 < posX + Pista.width) {
+                    if (estado_player <= 3 && estado_player != 0) { // Move para a direita
+                        obstaculos[i].position.x -= bgSpeedX * 0.5;
+                    }
+                    else if (estado_player >= 4) { // Move para a esquerda
+                        obstaculos[i].position.x += bgSpeedX * 0.5;
+                    }
+                }
 
-                // Reduz a velocidade ao colidir com um obstáculo
-                *bgSpeed -= 0.1f; // Diminui a velocidaed
+                DrawTexture(obstaculos[i].texture, obstaculos[i].position.x, obstaculos[i].position.y, WHITE);
+                float obstacleRadius = obstaculos[i].texture.width / 2.0f;
+                Vector2 obstacleCenter = { obstaculos[i].position.x + obstacleRadius, obstaculos[i].position.y + obstacleRadius };
+                //DrawCircleV(obstacleCenter, obstacleRadius, Fade(RED, 0.5));
 
-
-                if (*bgSpeed <= 0.1) {
-                    *bgSpeed = 0.1;
+                if (CheckCollisionCircleRec(obstacleCenter, obstacleRadius, AreaJogador)) {
+                    *bgSpeed -= 0.1f; // Diminui a velocidaed
+                    if (*bgSpeed <= 0.1) {
+                        *bgSpeed = 0.1;
+                    }
                 }
             }
         }
@@ -433,7 +454,7 @@ void DrawRScreen(Texture2D buttonExit) {
     DrawTexture(buttonExit, s_width / 2 - buttonExit.width / 2, 50, WHITE);
 }
 
-void DrawVelocimetro(float speed, float maxSpeed) {
+void DrawVelocimetro(Texture2D Velocimetro, float speed, float maxSpeed) {
     // Convertendo a velocidade de pixels por frame para Km/h
     float Kmh = (speed * 195) / maxSpeed;
 
@@ -449,8 +470,10 @@ void DrawVelocimetro(float speed, float maxSpeed) {
     // Definindo o angulo do ponteiro começando em 220 
     float angulo = 220 - Kmh * 1.25; 
 
+
+    DrawTexture(Velocimetro ,centerPosX - 70, centerPosY - 70, WHITE);
     // Desenhando o circulo do velocimetro (centro)
-    DrawCircle(centerPosX, centerPosY, 70, Fade(BLACK, 0.9));
+    DrawCircle(centerPosX, centerPosY, 70, Fade(BLACK  , 0.7));
 
     // Desenhando o contorno cinza escuro ao redor do velocimetro
     DrawRing((Vector2){ centerPosX, centerPosY }, 72, 67, 0, 360, 20, DARKGRAY);
@@ -468,4 +491,3 @@ void DrawVelocimetro(float speed, float maxSpeed) {
     // Desenhando o texto com a velocidade
     DrawText(TextFormat("%.0f Km/h", Kmh), centerPosX - textWidth / 2 +20, centerPosY + 40, 15, GREEN);
 }
-
