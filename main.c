@@ -23,8 +23,8 @@ typedef struct {
 } Obstaculo;
 
 // Funçoes para desenhar as texturas de cada tela
-void DrawMScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOptions, Texture2D buttonExit);                    // OS * servem para definir ponteiros para podermos modificalos dentro da função
-void DrawPScreen(Texture2D buttonExit, Texture2D Pista,Texture2D Background, Texture2D BG, Texture2D Sky, Texture2D BG2, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float *bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale, int pos_x_player, Rectangle AreaJogador, Texture2D Grama);
+void DrawMScreen(Texture2D buttonPlay, Texture2D buttonOptions, Texture2D buttonExit);                    // OS * servem para definir ponteiros para podermos modificalos dentro da função
+void DrawPScreen(Texture2D buttonExit, Texture2D Pista,Texture2D Background, Texture2D BG, Texture2D Sky, Texture2D BG2, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float *bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale, int pos_x_player, Rectangle AreaJogador, Texture2D Grama, float timer);
 void DrawRScreen(Texture2D buttonExit);
 void DrawVelocimetro(Texture2D Velocimetro,float speed, float max);
 void InitObstaculo(Texture2D obstacleTexture);
@@ -61,10 +61,12 @@ int main() {
     Texture2D Jogador_E2 = LoadTexture("play-img/carro_esquerda2.png");
     Texture2D Jogador_E3 = LoadTexture("play-img/carro_esquerda3.png");
     Texture2D buttonExit = LoadTexture("menu-img/quit.png");
-    Texture2D buttonPlay = LoadTexture("menu-img/play.png");
+    Texture2D buttonPlay = LoadTexture("menu-img/menuEA.png");
     Texture2D buttonOptions = LoadTexture("menu-img/play_hover.png");
     Texture2D Velocimetro = LoadTexture("play-img/Velocimetro.png");
     obstacleTexture = LoadTexture("play-img/Obstaculo1.png");
+    // Carregamento da fonte
+    Font Fonte = LoadFont("RAFAARTE/fontes/jedisfleft.ttf");
 
     // Variaveis de controle
     Screen screenAtual = MENUS;
@@ -80,8 +82,8 @@ int main() {
     float pos_pista_y = s_height - 120;
     int pos_x_player = 465;
     int pos_y_player = 720;
-    float timer = 30.0f;
-    int Pontos = 30.0f;
+    float timer = 3.0f;
+    int Pontos = 0.0f;
 
     Rectangle AreaJogador = { pos_x_player, 720, Jogador.width, Jogador.height };
 
@@ -105,7 +107,10 @@ int main() {
 
         switch (screenAtual) {
             case MENUS:
-                DrawMScreen(menuBG, buttonPlay, buttonOptions, buttonExit);
+            timer = 3.0f;
+            Pontos = 0.0f;
+            bgSpeed  = 0.0f;
+                DrawMScreen(buttonPlay, buttonOptions, buttonExit);
 
                 // Logica para detectar cliques nos botoes
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -121,7 +126,10 @@ int main() {
                 break;
 
             case P_screen:
-                DrawPScreen(buttonExit, Pista, Background, BG,  Sky, BG2, Jogador, Jogador_D1, Jogador_D2, Jogador_E1, Jogador_E2, &pos_pista_x, &pos_pista_y, &bgSpeed, bgSpeedX, &estado_player, &SpriteTimer, pistaScale, pos_x_player, AreaJogador, Grama);
+                float Kmh = (bgSpeed * 195) / maxSpeed;
+                timer -= GetFrameTime();
+                Pontos += GetTime() * Kmh /100;
+                DrawPScreen(buttonExit, Pista, Background, BG,  Sky, BG2, Jogador, Jogador_D1, Jogador_D2, Jogador_E1, Jogador_E2, &pos_pista_x, &pos_pista_y, &bgSpeed, bgSpeedX, &estado_player, &SpriteTimer, pistaScale, pos_x_player, AreaJogador, Grama, timer);
 
                 // Atualização da posição e velocidade da pista
                 pos_pista_y += bgSpeed * 1.2;
@@ -277,6 +285,12 @@ int main() {
                     }
                 }
 
+                // Logica para detectar fim do jogo
+                if (timer <= 0) {
+                        screenAtual = Points_screen;
+                    
+                }
+
                 // Atualização do velocimetro
                 DrawVelocimetro( Velocimetro, bgSpeed, maxSpeed);
 
@@ -292,18 +306,30 @@ int main() {
                     }
                 }
                 break;
-            case Points_screen:
+            case Points_screen:    
                 ClearBackground(BLACK);
-                float textPoints = MeasureText(TextFormat("%.0f Km/h", Pontos), 25);
-                DrawText(TextFormat("Pontuação: %.0f", Pontos), s_width - textPoints , s_height + 40, 15, GREEN);
-                DrawTexture(buttonExit, s_width / 2 - buttonExit.width / 2, 50, WHITE);
-                   // Logica para detectar clique no botão de saida na tela de ranking
+
+
+                DrawTexture(menuBG, s_width / 2 - menuBG.width /2, 0, WHITE);
+                DrawTextEx(Fonte, "SUA PONTUACAO:", (Vector2){ s_width / 2 , 100 }, Fonte.baseSize, 2, WHITE);
+                char scoreText[50];
+                snprintf(scoreText, sizeof(scoreText), "PONTOS: %d", Pontos);
+                DrawTextEx(Fonte, scoreText, (Vector2){ s_width / 2  , 200 }, Fonte.baseSize, 2, WHITE);
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     Vector2 mousePoint = GetMousePosition();
-                    if (CheckCollisionPointRec(mousePoint, (Rectangle){s_width / 2 - buttonExit.width / 2, 50, buttonExit.width, buttonExit.height})) {
+                    if (CheckCollisionPointRec(mousePoint, (Rectangle){ s_width / 2 - 150, 650, buttonExit.width, buttonExit.height })) {
                         screenAtual = MENUS;
                     }
                 }
+
+                DrawTexture(buttonExit, s_width / 2 - buttonExit.width / 2, 650, WHITE);                
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                    Vector2 mousePoint = GetMousePosition();
+                    if (CheckCollisionPointRec(mousePoint, (Rectangle){ s_width / 2 - 150, 650, buttonExit.width, buttonExit.height })) {
+                        screenAtual = MENUS;
+                    }
+                }
+                break;
             
 
         }
@@ -329,6 +355,9 @@ int main() {
     UnloadTexture(obstacleTexture);
 
     UnloadMusicStream(music);
+
+    UnloadFont(Fonte);
+
     CloseAudioDevice();
 
     // Fechamento da janela
@@ -404,15 +433,14 @@ void UpdateEDrawObstaculo(float *bgSpeed, float bgSpeedX, int estado_player, flo
 
 
 
-void DrawMScreen(Texture2D menuBG, Texture2D buttonPlay, Texture2D buttonOptions, Texture2D buttonExit) {
-    ClearBackground(BLACK); 
-    DrawTexture(menuBG, 265, 50, WHITE);  
-    DrawTexture(buttonPlay, s_width / 2 - 150, 100, WHITE);
+void DrawMScreen(Texture2D buttonPlay, Texture2D buttonOptions, Texture2D buttonExit) {
+    ClearBackground((Color){181, 162, 172, 255}); 
     DrawTexture(buttonOptions, s_width / 2 - 150, 250, WHITE);
     DrawTexture(buttonExit, s_width / 2 - 150, 650, WHITE);
+    DrawTexture(buttonPlay, 0, 0, WHITE);
 }
 
-void DrawPScreen(Texture2D buttonExit, Texture2D Pista, Texture2D Background, Texture2D BG,Texture2D Sky, Texture2D BG2, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float *bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale,  int pos_x_player, Rectangle AreaJogador, Texture2D Grama) { 
+void DrawPScreen(Texture2D buttonExit, Texture2D Pista, Texture2D Background, Texture2D BG,Texture2D Sky, Texture2D BG2, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float *bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale,  int pos_x_player, Rectangle AreaJogador, Texture2D Grama, float timer) { 
     int pos_BG_y = 300;
 
     ClearBackground(DARKPURPLE);
@@ -443,6 +471,11 @@ void DrawPScreen(Texture2D buttonExit, Texture2D Pista, Texture2D Background, Te
     DrawTextureEx(BG2 , (Vector2){600, 115}, 0, 0.8, WHITE);
     DrawTextureEx(BG , (Vector2){0, 0}, 0, 0.8, WHITE);
     DrawTextureEx(Background , (Vector2){0, 300}, 0, 1, WHITE);
+
+    // Desenha o timer na tela de jogo
+    char timerText[10];
+    snprintf(timerText, sizeof(timerText), "Tempo: %02d", (int)ceil(timer));
+    DrawText(timerText, 850, 10, 30, RED);
 
     // Desenha o gotão de saida
     DrawTexture(buttonExit, s_width / 2 - buttonExit.width / 2, 50, WHITE);
