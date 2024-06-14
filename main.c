@@ -317,13 +317,13 @@ int main() {
                 // Texto da pontuação
                 const char* pontuacaoText = "SUA PONTUACAO:";
                 Vector2 pontuacaoTextSize = MeasureTextEx(Fonte, pontuacaoText, Fonte.baseSize, 2);
-                DrawTextEx(Fonte, pontuacaoText, (Vector2){ s_width / 2 - pontuacaoTextSize.x / 2, 100 }, Fonte.baseSize +10, 2, WHITE);
+                DrawTextEx(Fonte, pontuacaoText, (Vector2){ s_width / 2 - pontuacaoTextSize.x / 2, 100 }, Fonte.baseSize , 2, WHITE);
 
                 // Texto dos pontos
                 char scoreText[50];
                 snprintf(scoreText, sizeof(scoreText), "PONTOS: %d", Pontos);
                 Vector2 scoreTextSize = MeasureTextEx(Fonte, scoreText, Fonte.baseSize, 2);
-                DrawTextEx(Fonte, scoreText, (Vector2){ s_width / 2 - scoreTextSize.x / 2, 200 }, Fonte.baseSize +10, 2, WHITE);
+                DrawTextEx(Fonte, scoreText, (Vector2){ s_width / 2 - scoreTextSize.x / 2, 200 }, Fonte.baseSize, 2, WHITE);
 
                 // Verificar clique no botão
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
