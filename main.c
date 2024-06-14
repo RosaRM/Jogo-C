@@ -27,12 +27,12 @@ void DrawMScreen(Texture2D buttonPlay, Texture2D buttonOptions, Texture2D button
 void DrawPScreen(Texture2D buttonExit, Texture2D Pista,Texture2D Background, Texture2D BG, Texture2D Sky, Texture2D BG2, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float *bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale, int pos_x_player, Rectangle AreaJogador, Texture2D Grama, float timer);
 void DrawRScreen(Texture2D buttonExit);
 void DrawVelocimetro(Texture2D Velocimetro,float speed, float max);
-void InitObstaculo(Texture2D obstacleTexture);
-void SpawnObstaculo(float pistaX, float pistaY, float pistaWidth, Texture2D obstacleTexture, float pistaScale, Texture2D Pista);
+void InitObstaculo(Texture2D obstaculoTexture);
+void SpawnObstaculo(float pistaX, float pistaY, float pistaWidth, Texture2D obstaculoTexture, float pistaScale, Texture2D Pista);
 void UpdateEDrawObstaculo(float *bgSpeed, float bgSpeedX, int estado_player, float posX , Texture2D Pista,  Texture2D Jogador, int pos_x_player, Rectangle AreaJogador);
 
 Obstaculo obstaculos[MAX_OBSTACULOS];
-Texture2D obstacleTexture;
+Texture2D obstaculoTexture;
 
 int main() {
     // Inicialização da janela
@@ -64,7 +64,7 @@ int main() {
     Texture2D buttonPlay = LoadTexture("menu-img/menuEA.png");
     Texture2D buttonOptions = LoadTexture("menu-img/play_hover.png");
     Texture2D Velocimetro = LoadTexture("play-img/Velocimetro.png");
-    obstacleTexture = LoadTexture("play-img/Obstaculo1.png");
+    obstaculoTexture = LoadTexture("play-img/Obstaculo1.png");
     // Carregamento da fonte
     Font Fonte = LoadFont("RAFAARTE/fontes/jedisfleft.ttf");
 
@@ -87,11 +87,11 @@ int main() {
 
     Rectangle AreaJogador = { pos_x_player, 720, Jogador.width, Jogador.height };
 
-    InitObstaculo(obstacleTexture);
+    InitObstaculo(obstaculoTexture);
 
     // Temporizador para geração de obstaculos
-    float obstacleSpawnTimer = 0.0f;
-    float obstacleSpawnInterval = 5.0f; // Gera obstaculo a cada 5 segundos
+    float obstaculoSpawnTimer = 0.0f;
+    float obstaculoSpawnInterval = 5.0f; // Gera obstaculo a cada 5 segundos
 
     // Loop principal
     while (!WindowShouldClose()) {
@@ -100,27 +100,29 @@ int main() {
 
         float bgSpeedX = bgSpeed; // Velocidade da curva
         // Atualização do temporizador de obstaculos
-        obstacleSpawnTimer += GetFrameTime();
+        obstaculoSpawnTimer += GetFrameTime();
 
         BeginDrawing();
         ClearBackground(RAYWHITE); // Mude a cor de fundo conforme necessario
 
         switch (screenAtual) {
             case MENUS:
-            timer = 3.0f;
-            Pontos = 0.0f;
+            timer = 10.0f;
             bgSpeed  = 0.0f;
                 DrawMScreen(buttonPlay, buttonOptions, buttonExit);
 
                 // Logica para detectar cliques nos botoes
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     Vector2 mousePoint = GetMousePosition();
-                    if (CheckCollisionPointRec(mousePoint, (Rectangle){s_width / 2 - 150, 650, buttonExit.width, buttonExit.height})) {
+                    if (CheckCollisionPointRec(mousePoint, (Rectangle){542, 550, 74, 50})) {  // Botão Exit
                         CloseWindow();
-                    } else if (CheckCollisionPointRec(mousePoint, (Rectangle){s_width / 2 - 150, 100, buttonPlay.width, buttonPlay.height})) {
+                    } else if (CheckCollisionPointRec(mousePoint, (Rectangle){500, 650, 190, 90})) { // Botão Play
+                        Pontos = 0.0f;
                         screenAtual = P_screen;
-                    } else if (CheckCollisionPointRec(mousePoint, (Rectangle){s_width / 2 - 150, 250, buttonOptions.width, buttonOptions.height})) {
+                    } else if (CheckCollisionPointRec(mousePoint, (Rectangle){360, 440, 177, 90})) { // Botão Options
                         screenAtual = R_screen;
+                    } else if (CheckCollisionPointRec(mousePoint, (Rectangle){640, 440, 177, 90})) { // Botão Points
+                        screenAtual = Points_screen;
                     }
                 }
                 break;
@@ -260,15 +262,15 @@ int main() {
                 }
 
                 // Gera obstaculos periodicamente
-                if (obstacleSpawnTimer >= obstacleSpawnInterval) {
-                    SpawnObstaculo(pos_pista_x , pos_pista_y, Pista.width * pistaScale, obstacleTexture, pistaScale, Pista);
-                    obstacleSpawnTimer = 0.0f; // Reinicia o temporizador
+                if (obstaculoSpawnTimer >= obstaculoSpawnInterval) {
+                    SpawnObstaculo(pos_pista_x , pos_pista_y, Pista.width * pistaScale, obstaculoTexture, pistaScale, Pista);
+                    obstaculoSpawnTimer = 0.0f; // Reinicia o temporizador
                     if (bgSpeed > (20 * maxSpeed)/195) {
-                    obstacleSpawnInterval = 0.4f;// Define o tempo paar spawnar como 2
+                    obstaculoSpawnInterval = 0.4f;// Define o tempo paar spawnar como 2
                         if (bgSpeed > (50 * maxSpeed)/195) {
-                        obstacleSpawnInterval = 0.3f;// Define o tempo paar spawnar como 2                    
+                        obstaculoSpawnInterval = 0.3f;// Define o tempo paar spawnar como 2                    
                             if (bgSpeed > (50 * maxSpeed)/195) {
-                               obstacleSpawnInterval = 0.3f;// Define o tempo paar spawnar como 2
+                               obstaculoSpawnInterval = 0.3f;// Define o tempo paar spawnar como 2
                             }
                         }
                     }
@@ -309,12 +311,21 @@ int main() {
             case Points_screen:    
                 ClearBackground(BLACK);
 
+                // Desenhar o background do menu
+                DrawTexture(menuBG, s_width / 2 - menuBG.width / 2, 0, WHITE);
 
-                DrawTexture(menuBG, s_width / 2 - menuBG.width /2, 0, WHITE);
-                DrawTextEx(Fonte, "SUA PONTUACAO:", (Vector2){ s_width / 2 , 100 }, Fonte.baseSize, 2, WHITE);
+                // Texto da pontuação
+                const char* pontuacaoText = "SUA PONTUACAO:";
+                Vector2 pontuacaoTextSize = MeasureTextEx(Fonte, pontuacaoText, Fonte.baseSize, 2);
+                DrawTextEx(Fonte, pontuacaoText, (Vector2){ s_width / 2 - pontuacaoTextSize.x / 2, 100 }, Fonte.baseSize +10, 2, WHITE);
+
+                // Texto dos pontos
                 char scoreText[50];
                 snprintf(scoreText, sizeof(scoreText), "PONTOS: %d", Pontos);
-                DrawTextEx(Fonte, scoreText, (Vector2){ s_width / 2  , 200 }, Fonte.baseSize, 2, WHITE);
+                Vector2 scoreTextSize = MeasureTextEx(Fonte, scoreText, Fonte.baseSize, 2);
+                DrawTextEx(Fonte, scoreText, (Vector2){ s_width / 2 - scoreTextSize.x / 2, 200 }, Fonte.baseSize +10, 2, WHITE);
+
+                // Verificar clique no botão
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     Vector2 mousePoint = GetMousePosition();
                     if (CheckCollisionPointRec(mousePoint, (Rectangle){ s_width / 2 - 150, 650, buttonExit.width, buttonExit.height })) {
@@ -322,15 +333,17 @@ int main() {
                     }
                 }
 
-                DrawTexture(buttonExit, s_width / 2 - buttonExit.width / 2, 650, WHITE);                
+                // Desenhar o botão de saída
+                DrawTexture(buttonExit, s_width / 2 - buttonExit.width / 2, 650, WHITE);
+
+                // Verificar clique no botão (repetido?)
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     Vector2 mousePoint = GetMousePosition();
                     if (CheckCollisionPointRec(mousePoint, (Rectangle){ s_width / 2 - 150, 650, buttonExit.width, buttonExit.height })) {
                         screenAtual = MENUS;
                     }
                 }
-                break;
-            
+                break;            
 
         }
 
@@ -352,7 +365,7 @@ int main() {
     UnloadTexture(buttonExit);
     UnloadTexture(buttonPlay);
     UnloadTexture(buttonOptions);
-    UnloadTexture(obstacleTexture);
+    UnloadTexture(obstaculoTexture);
 
     UnloadMusicStream(music);
 
@@ -367,24 +380,24 @@ int main() {
 }
 
 // Função para inicializar os obstaculos
-void InitObstaculo(Texture2D obstacleTexture) {
+void InitObstaculo(Texture2D obstaculoTexture) {
     for (int i = 0; i < MAX_OBSTACULOS; i++) {
         // Inicializa a posição do obstaculo como (0, 0)
         obstaculos[i].position = (Vector2){0, 0};
         // Define a textura do obstaculo como a textura carregada
-        obstaculos[i].texture = obstacleTexture;
+        obstaculos[i].texture = obstaculoTexture;
         // Define o obstaculo como inativo inicialmente
         obstaculos[i].Ativo = false;
     }
 }
 
 // Função para gerar um obstaculo em uma posição especifica da pista
-void SpawnObstaculo(float pistaX, float pistaY, float pistaWidth, Texture2D obstacleTexture, float pistaScale, Texture2D Pista) {
+void SpawnObstaculo(float pistaX, float pistaY, float pistaWidth, Texture2D obstaculoTexture, float pistaScale, Texture2D Pista) {
     for (int i = 0; i < MAX_OBSTACULOS; i++) {
         // Verifica se ha algum obstaculo inativo para ser ativado
         if (!obstaculos[i].Ativo) {
             // Define a posição do obstaculo na pista, na parte superior visivel
-            obstaculos[i].position = (Vector2){ pistaX + GetRandomValue(56, pistaWidth - obstacleTexture.width - 56), pistaY - ((Pista.height / 2 * pistaScale)*(5*(i+1)))};
+            obstaculos[i].position = (Vector2){ pistaX + GetRandomValue(56, pistaWidth - obstaculoTexture.width - 56), pistaY - ((Pista.height / 2 * pistaScale)*(5*(i+1)))};
             // Ativa o obstaculo
             obstaculos[i].Ativo = true;
             break; // Sai do loop apos ativar um obstaculo
@@ -415,11 +428,11 @@ void UpdateEDrawObstaculo(float *bgSpeed, float bgSpeedX, int estado_player, flo
                 }
 
                 DrawTexture(obstaculos[i].texture, obstaculos[i].position.x, obstaculos[i].position.y, WHITE);
-                float obstacleRadius = obstaculos[i].texture.width / 2.0f;
-                Vector2 obstacleCenter = { obstaculos[i].position.x + obstacleRadius, obstaculos[i].position.y + obstacleRadius };
-                //DrawCircleV(obstacleCenter, obstacleRadius, Fade(RED, 0.5));
+                float obstaculoRadius = obstaculos[i].texture.width / 2.0f;
+                Vector2 obstaculoCenter = { obstaculos[i].position.x + obstaculoRadius, obstaculos[i].position.y + obstaculoRadius };
+                //DrawCircleV(obstaculoCenter, obstaculoRadius, Fade(RED, 0.5));
 
-                if (CheckCollisionCircleRec(obstacleCenter, obstacleRadius, AreaJogador)) {
+                if (CheckCollisionCircleRec(obstaculoCenter, obstaculoRadius, AreaJogador)) {
                     *bgSpeed -= 0.1f; // Diminui a velocidaed
                     if (*bgSpeed <= 0.1) {
                         *bgSpeed = 0.1;
@@ -435,9 +448,30 @@ void UpdateEDrawObstaculo(float *bgSpeed, float bgSpeedX, int estado_player, flo
 
 void DrawMScreen(Texture2D buttonPlay, Texture2D buttonOptions, Texture2D buttonExit) {
     ClearBackground((Color){181, 162, 172, 255}); 
-    DrawTexture(buttonOptions, s_width / 2 - 150, 250, WHITE);
-    DrawTexture(buttonExit, s_width / 2 - 150, 650, WHITE);
     DrawTexture(buttonPlay, 0, 0, WHITE);
+
+    int numCircles = 1; // Número de círculos a serem desenhados
+    int screenHeight = GetScreenHeight();
+    int screenWidth = GetScreenWidth();
+    Color pink = {255, 182, 193, 255}; // Cor rosa
+
+    for (int i = 0; i < numCircles; i++) {
+        float x = GetRandomValue(0, screenWidth);
+        float y = GetRandomValue(0, screenHeight / 2);
+        
+        // Tamanho e velocidade aleatória
+        float raio = GetRandomValue(5, 20);
+        float speed = GetRandomValue(0.000000001,0.000000005) / (10000000000000000); // Velocidade razoável entre 0.01 e 0.05
+
+        // Atualizar a posição do círculo para descer na tela
+        y += speed * i;
+
+        // Ajustar a opacidade conforme o círculo desce
+        pink.a = 255 - (255 * y / screenHeight);
+
+        // Desenhar o círculo
+        DrawCircle(x, y, raio, pink);
+    }
 }
 
 void DrawPScreen(Texture2D buttonExit, Texture2D Pista, Texture2D Background, Texture2D BG,Texture2D Sky, Texture2D BG2, Texture2D Jogador, Texture2D Jogador_D1, Texture2D Jogador_D2, Texture2D Jogador_E1, Texture2D Jogador_E2, float *pos_pista_x, float *pos_pista_y, float *bgSpeed, float bgSpeedX, int *estado_player, float *SpriteTimer, float scale,  int pos_x_player, Rectangle AreaJogador, Texture2D Grama, float timer) { 
@@ -483,7 +517,7 @@ void DrawPScreen(Texture2D buttonExit, Texture2D Pista, Texture2D Background, Te
 
 void DrawRScreen(Texture2D buttonExit) {
     ClearBackground(BLUE);
-    DrawText("Ranking Screen", s_width / 2 - MeasureText("Ranking Screen", 20) / 2, s_height / 2 - 10, 20, WHITE);
+    DrawText("MUITAS OPÇÕES", s_width / 2 - MeasureText("Ranking Screen", 20) / 2, s_height / 2 - 10, 20, WHITE);
     DrawTexture(buttonExit, s_width / 2 - buttonExit.width / 2, 50, WHITE);
 }
 
