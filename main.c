@@ -107,7 +107,7 @@ int main() {
 
         switch (screenAtual) {
             case MENUS:
-            timer = 10.0f;
+            timer = 45.0f;
             bgSpeed  = 0.0f;
                 DrawMScreen(buttonPlay, buttonOptions, buttonExit);
 
